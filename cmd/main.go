@@ -81,7 +81,7 @@ func RunServer() {
 func main() {
 	//soap.InitCache(100)
 	log.InitLogger(os.Stdout)
-	log.PrintfMsg("Starting server")
+	log.LogDebug("Starting server")
 
 	tasks.InitTasks()
 	RunServer()
