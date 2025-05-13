@@ -62,6 +62,22 @@ type responseTask struct {
 	respList []any
 }
 
+// XMLMarshaller lets you inject your favourite custom xml implementation
+type XMLMarshaller interface {
+	Marshal(v interface{}) ([]byte, error)
+	Unmarshal(xml []byte, v interface{}) error
+}
+
+type defaultMarshaller struct{}
+
+func (dm defaultMarshaller) Marshal(v interface{}) ([]byte, error) {
+	return xml.MarshalIndent(v, "", "	")
+}
+
+func (dm defaultMarshaller) Unmarshal(xmlBytes []byte, v interface{}) error {
+	return xml.Unmarshal(xmlBytes, v)
+}
+
 // Server a SOAP server, which can be run standalone or used as a http.HandlerFunc
 type Server struct {
 	Log             func(...interface{}) // do nothing on nil or add your fmt.Print* or log.*
