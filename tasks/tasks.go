@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+
+	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
 type TaskType int
@@ -207,10 +209,8 @@ func AddDevicetoTaskList(serial, addr string) {
 	l.mu.Unlock()
 }
 
-func (s *Server) createSetParamTask(mapTask []any) []SetParamTask {
+func createSetParamTask(mapTask []any) []SetParamTask {
 
-	fmt.Println("start", mapTask)
-	s.log("mapresponse", s.mapResponse)
 	var settask []SetParamTask
 	settask = make([]SetParamTask, 0)
 
@@ -238,7 +238,7 @@ func (s *Server) createSetParamTask(mapTask []any) []SetParamTask {
 	return settask
 }
 
-func (s *Server) parseTask(task map[string]any) (*Task, error) {
+func parseTask(task map[string]any) (*Task, error) {
 	fmt.Println(task)
 	for k, v := range task {
 		fmt.Println(reflect.TypeOf(v))
@@ -246,7 +246,7 @@ func (s *Server) parseTask(task map[string]any) (*Task, error) {
 			switch k {
 			case "AddObject":
 				return &Task{
-					id:     gen_uuid(),
+					id:     utils.Gen_uuid(),
 					action: "AddObject",
 					params: AddTask{
 						Name: mapTask["Name"].(string),
@@ -256,7 +256,7 @@ func (s *Server) parseTask(task map[string]any) (*Task, error) {
 				}, nil
 			case "DeleteObject":
 				return &Task{
-					id:     gen_uuid(),
+					id:     utils.Gen_uuid(),
 					action: "DeleteObject",
 					params: DeleteTask{
 						Name: mapTask["Name"].(string),
@@ -266,7 +266,7 @@ func (s *Server) parseTask(task map[string]any) (*Task, error) {
 				}, nil
 			case "GetParameterValues":
 				return &Task{
-					id:     gen_uuid(),
+					id:     utils.Gen_uuid(),
 					action: "GetParameterValues",
 					params: GetParamTask{
 						Name: mapTask["Name"].([]string),
@@ -278,9 +278,9 @@ func (s *Server) parseTask(task map[string]any) (*Task, error) {
 		} else if arrayTask, ok := v.([]any); ok {
 			if k == "SetParameterValues" {
 				return &Task{
-					id:        gen_uuid(),
+					id:        utils.Gen_uuid(),
 					action:    "SetParameterValues",
-					params:    s.createSetParamTask(arrayTask),
+					params:    createSetParamTask(arrayTask),
 					once:      true,
 					eventCode: 6,
 				}, nil
@@ -291,7 +291,7 @@ func (s *Server) parseTask(task map[string]any) (*Task, error) {
 
 	return nil, errors.New("Task is invalid")
 }
-func (s *Server) ParseScriptToTask(getScript map[string]any) error {
+func ParseScriptToTask(getScript map[string]any) error {
 	script := GetXMLValue(getScript, "Script")
 
 	if script == nil {
@@ -313,7 +313,7 @@ func (s *Server) ParseScriptToTask(getScript map[string]any) error {
 		for _, k := range keys {
 			if curr_task, ok := scriptList[k]; ok {
 				if addtask, ok := curr_task.(map[string]any); ok {
-					find_task, err := s.parseTask(addtask)
+					find_task, err := parseTask(addtask)
 
 					if err != nil {
 						return err
@@ -328,9 +328,7 @@ func (s *Server) ParseScriptToTask(getScript map[string]any) error {
 	return nil
 }
 
-func (s *Server) CheckNewConReqTasks(serial, host string) {
-	fmt.Println("CheckNewConReqTasks", l.TaskList)
-
+func CheckNewConReqTasks(serial, host string) {
 	id := deviceid{serial: serial, host: host}
 	if script_tasks, ok := scripterTasks[serial]; ok {
 		l.TaskList[id] = append(l.TaskList[id], script_tasks...)

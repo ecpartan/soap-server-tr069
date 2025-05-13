@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"soap"
+	"os"
+
+	"github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/server"
+	"github.com/ecpartan/soap-server-tr069/tasks"
 
 	//"github.com/globusdigital/soap"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
@@ -17,8 +20,7 @@ type FooResponse struct {
 
 // RunServer run a little demo server
 func RunServer() {
-	soapServer := soap.NewServer()
-	soapServer.Log = log.Println
+	soapServer := server.NewServer()
 
 	soapServer.RegisterHandler(
 		"/",
@@ -55,7 +57,7 @@ func RunServer() {
 			req, err := http.NewRequest("POST", "http://localhost:8999/", nil)
 
 			if err != nil {
-				log.Fatalln(err)
+				log.log.Fatalln(err)
 			}
 
 			resp, err := t.RoundTrip(req)
@@ -73,13 +75,15 @@ func RunServer() {
 
 	err := http.ListenAndServe(":8089", soapServer)
 
-	fmt.Println("exiting with error", err)
+	log.Println("exiting with error", err)
 }
 
 func main() {
 	//soap.InitCache(100)
-	soap.InitTasks()
-	soap.RedisStart()
+	log.InitLogger(os.Stdout)
+	log.PrintfMsg("Starting server")
+
+	tasks.InitTasks()
 	RunServer()
 
 }

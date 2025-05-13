@@ -9,13 +9,14 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/clbanning/mxj/v2"
 	"github.com/dgrijalva/lfu-go"
+	"github.com/ecpartan/soap-server-tr069/soap"
+	"github.com/ecpartan/soap-server-tr069/tasks"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
@@ -80,7 +81,6 @@ func (dm defaultMarshaller) Unmarshal(xmlBytes []byte, v interface{}) error {
 
 // Server a SOAP server, which can be run standalone or used as a http.HandlerFunc
 type Server struct {
-	Log             func(...interface{}) // do nothing on nil or add your fmt.Print* or log.*
 	handlers        map[string]map[string]map[string]*operationHandler
 	Marshaller      XMLMarshaller
 	ContentType     string
@@ -256,11 +256,11 @@ func (s *Server) PrepareHeaderInfo(mp any) {
 			envinfo.Xsd = xsd
 		}
 	} else {
-		envinfo.SOAPENV = string(bNamespaceSoap12)
-		envinfo.SOAPENC = string(bNamespaceEnc)
-		envinfo.Cwmp = string(bNamespaceCwmp)
-		envinfo.Xsd = string(bNamespaceXsd)
-		envinfo.Xsi = string(bNamespaceXsi)
+		envinfo.SOAPENV = string(soap.BNamespaceSoap12)
+		envinfo.SOAPENC = string(soap.BNamespaceEnc)
+		envinfo.Cwmp = string(soap.BNamespaceCwmp)
+		envinfo.Xsd = string(soap.BNamespaceXsd)
+		envinfo.Xsi = string(soap.BNamespaceXsi)
 	}
 
 	s.context = context.WithValue(s.context, "EnvInfo", envinfo)
@@ -294,7 +294,7 @@ func (s *Server) NewInformResponse(mp interface{}) *InformResponse {
 	return resp
 }
 
-func (s *Server) NewGetParameterValues(paramlist GetParamTask) *GetParameterValues {
+func (s *Server) NewGetParameterValues(paramlist tasks.GetParamTask) *GetParameterValues {
 	s.log("NewGetParameterValues")
 	resp := &GetParameterValues{}
 
@@ -323,7 +323,7 @@ func (s *Server) NewGetParameterValues(paramlist GetParamTask) *GetParameterValu
 	return resp
 }
 
-func (s *Server) NewSetParameterValues(paramlist []SetParamTask) *SetParameterValues {
+func (s *Server) NewSetParameterValues(paramlist []tasks.SetParamTask) *SetParameterValues {
 
 	resp := &SetParameterValues{}
 
@@ -405,29 +405,22 @@ func NewServer() *Server {
 	return &Server{
 		handlers:    make(map[string]map[string]map[string]*operationHandler),
 		Marshaller:  defaultMarshaller{},
-		ContentType: SoapContentType11,
-		SoapVersion: SoapVersion11,
+		ContentType: soap.SoapContentType11,
+		SoapVersion: soap.SoapVersion11,
 		context:     context.Background(),
 		Cache:       lfu.New(),
 		mapResponse: make(map[string]responseTask),
 	}
 }
 
-func (s *Server) log(args ...interface{}) {
-	if s.Log == nil {
-		return
-	}
-	pc, _, _, _ := runtime.Caller(0)
-	s.Log(append([]interface{}{runtime.FuncForPC(pc).Name()}, args...)...)
-}
 func (s *Server) UseSoap11() {
-	s.SoapVersion = SoapVersion11
-	s.ContentType = SoapContentType11
+	s.SoapVersion = soap.SoapVersion11
+	s.ContentType = soap.SoapContentType11
 }
 
 func (s *Server) UseSoap12() {
-	s.SoapVersion = SoapVersion12
-	s.ContentType = SoapContentType12
+	s.SoapVersion = soap.SoapVersion12
+	s.ContentType = soap.SoapContentType12
 }
 
 // RegisterHandler register to handle an operation. This function must not be
@@ -449,7 +442,7 @@ func (s *Server) RegisterHandler(path string, action string, messageType string,
 func (s *Server) handleError(err error, w http.ResponseWriter) {
 	// has to write a soap fault
 	s.log("handling error:", err)
-	responseEnvelope := &Envelope{}
+	responseEnvelope := &soap.Envelope{}
 	xmlBytes, xmlErr := s.Marshaller.Marshal(responseEnvelope)
 	if xmlErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -478,8 +471,8 @@ func addSOAPHeader(w http.ResponseWriter, contentLength int, contentType string)
 func (s *Server) TransmitXMLReq(request any, w http.ResponseWriter) {
 	xmlBytes, err := s.Marshaller.Marshal(request)
 	// Adjust namespaces for SOAP 1.2
-	if s.SoapVersion == SoapVersion12 {
-		xmlBytes = replaceSoap11to12(xmlBytes)
+	if s.SoapVersion == soap.SoapVersion12 {
+		xmlBytes = soap.ReplaceSoap11to12(xmlBytes)
 	}
 	if err != nil {
 		s.handleError(fmt.Errorf("could not marshal response:: %s", err), w)
@@ -962,11 +955,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		mv, err := mxj.NewMapXmlSeq(soapRequestBytes)
 
-		paramType := ResponseUndefinded
+		paramType := tasks.ResponseUndefinded
 		var xml_body map[string]interface{}
 
 		if err != nil {
-			paramType = ResponseEndSession
+			paramType = tasks.ResponseEndSession
 		} else {
 			s.log(mv)
 			xml_body, paramType = s.CheckSoapType(addr, mv)
@@ -975,10 +968,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.log("found soap type", paramType)
 
 		switch paramType {
-		case ResponseUndefinded:
+		case tasks.ResponseUndefinded:
 			s.handleError(fmt.Errorf("unknown XML Soap Type"), w)
 			return
-		case ResponseEndSession:
+		case tasks.ResponseEndSession:
 			var serial string
 			if deviceID, ok := s.context.Value("DeviceID").(DeviceId); ok {
 				s.log("deviceID", deviceID)
@@ -992,20 +985,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			taskAction, task := s.NextTask(serial, addr)
 
-			if taskAction == NoTaskRequestR {
+			if taskAction == tasks.NoTaskRequestR {
 				s.log("task is nil")
 				w.WriteHeader(http.StatusNoContent)
 				return
 			} else {
 				s.ExecuteTask(taskAction, task, addr, w)
 			}
-		case Inform:
+		case tasks.Inform:
 			s.parseEventCode(xml_body)
 			if !w.(*responseWriter).outputStarted {
 				s.TransInformResponse(w, xml_body)
 			}
-		case GetParameterValuesResponse:
-			s.ParseGetResponse(xml_body, addr)
+		case tasks.GetParameterValuesResponse:
+			task.s.ParseGetResponse(xml_body, addr)
 			s.log("GetParameterValuesResponse")
 			s.GetTasks(w, addr)
 		case SetParameterValuesResponse:

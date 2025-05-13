@@ -21,13 +21,13 @@ const (
 )
 
 var (
-	bNamespaceSoap11 = []byte("http://schemas.xmlsoap.org/soap/envelope/")
-	bNamespaceSoap12 = []byte("http://www.w3.org/2003/05/soap-envelope")
+	BNamespaceSoap11 = []byte("http://schemas.xmlsoap.org/soap/envelope/")
+	BNamespaceSoap12 = []byte("http://www.w3.org/2003/05/soap-envelope")
 
-	bNamespaceEnc  = []byte("http://schemas.xmlsoap.org/soap/encoding/")
-	bNamespaceXsi  = []byte("http://www.w3.org/2001/XMLSchema-instance")
-	bNamespaceXsd  = []byte("http://www.w3.org/2001/XMLSchema")
-	bNamespaceCwmp = []byte("urn:dslforum-org:cwmp-1-0")
+	BNamespaceEnc  = []byte("http://schemas.xmlsoap.org/soap/encoding/")
+	BNamespaceXsi  = []byte("http://www.w3.org/2001/XMLSchema-instance")
+	BNamespaceXsd  = []byte("http://www.w3.org/2001/XMLSchema")
+	BNamespaceCwmp = []byte("urn:dslforum-org:cwmp-1-0")
 )
 
 // Envelope type `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
