@@ -1,10 +1,10 @@
 package tasks
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/ecpartan/soap-server-tr069/server"
+	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
 func SetValueInJSON(iface interface{}, path string, value interface{}) interface{} {
@@ -40,61 +40,63 @@ func SetValueInJSON(iface interface{}, path string, value interface{}) interface
 	return m
 }
 
-func SetBodyToMap(paramlist []any) map[string]any {
-	mp := make((map[string]any), len(paramlist))
+/*
+	func SetBodyToMap(paramlist []any) map[string]any {
+		mp := make((map[string]any), len(paramlist))
 
-	for _, v := range paramlist {
-		name := server.GetXMLValue(GetXMLValue(v, "Name"), "#text")
-		value := GetXMLValue(GetXMLValue(v, "Value"), "#text")
+		for _, v := range paramlist {
+			name := p.GetXMLValue(p.GetXMLValue(v, "Name"), "#text")
+			value := p.GetXMLValue(p.GetXMLValue(v, "Value"), "#text")
 
-		if n, ok := name.(string); ok {
-			if val, ok := value.(string); ok {
-				splitstr := strings.Split(n, ".")
-				prev := splitstr[0]
-				curr_mp := mp
-				for i := 1; i < len(splitstr); i++ {
-					if _, ok := curr_mp[prev]; !ok {
-						curr_mp[prev] = make(map[string]any)
-						curr_mp = curr_mp[prev].(map[string]any)
-						prev = splitstr[i]
-					} else {
-						curr_mp = curr_mp[prev].(map[string]any)
-						prev = splitstr[i]
+			if n, ok := name.(string); ok {
+				if val, ok := value.(string); ok {
+					splitstr := strings.Split(n, ".")
+					prev := splitstr[0]
+					curr_mp := mp
+					for i := 1; i < len(splitstr); i++ {
+						if _, ok := curr_mp[prev]; !ok {
+							curr_mp[prev] = make(map[string]any)
+							curr_mp = curr_mp[prev].(map[string]any)
+							prev = splitstr[i]
+						} else {
+							curr_mp = curr_mp[prev].(map[string]any)
+							prev = splitstr[i]
+						}
 					}
+					curr_mp[prev] = val
 				}
-				curr_mp[prev] = val
 			}
 		}
+		return mp
 	}
-	return mp
-}
-
+*/
 func updateJsonParams(paramlist []any, mp map[string]any) map[string]any {
 
 	for _, v := range paramlist {
-		name := GetXMLValueS(v, "Name.#text")
-		value := GetXMLValueS(v, "Value.#text")
+		name := p.GetXMLValueS(v, "Name.#text")
+		value := p.GetXMLValueS(v, "Value.#text")
 		if n, ok := name.(string); ok {
 			if val, ok := value.(string); ok {
 				SetValueInJSON(mp, n, val)
 			}
 		}
 	}
-	fmt.Println(mp)
+
+	logger.LogDebug("updateJsonParams", mp)
 	return mp
 }
 
-func (s *Server) ParseAddResponse(xml_body any, host string) {
+func ParseAddResponse(xml_body any, host string) {
 
-	s.log("ParseAddResponse")
-	s.log(xml_body)
+	logger.LogDebug("ParseAddResponse")
+	logger.LogDebug("body,", xml_body)
 	resp := s.mapResponse[host]
-	if status, ok := GetXMLValueS(xml_body, "Status.#text").(string); ok {
+	if status, ok := p.GetXMLValueS(xml_body, "Status.#text").(string); ok {
 		s.log(status)
 		if status == "1" || status == "0" {
 			s.log("Return:", status)
 
-			if number, ok := GetXMLValueS(xml_body, "InstanceNumber.#text").(string); ok {
+			if number, ok := p.GetXMLValueS(xml_body, "InstanceNumber.#text").(string); ok {
 
 				resp.respChan <- number
 
@@ -108,9 +110,9 @@ func (s *Server) ParseAddResponse(xml_body any, host string) {
 	//close(resp.respChan)
 }
 
-func (s *Server) ParseDeleteResponse(xml_body any, host string) {
+func ParseDeleteResponse(xml_body any, host string) {
 
-	s.log("ParseDeleteResponse")
+	logger.LogDebug("ParseDeleteResponse")
 	s.log(xml_body)
 	resp := s.mapResponse[host]
 
@@ -126,7 +128,7 @@ func (s *Server) ParseDeleteResponse(xml_body any, host string) {
 	//close(resp.respChan)
 }
 
-func (s *Server) ParseSetResponse(xml_body any, host string) {
+func ParseSetResponse(xml_body any, host string) {
 
 	s.log("ParseSetResponse")
 	s.log(xml_body)
@@ -134,19 +136,16 @@ func (s *Server) ParseSetResponse(xml_body any, host string) {
 	if resp.respChan == nil {
 		return
 	}
-	if status, ok := GetXMLValue(xml_body, "Status").(string); ok {
+	if status, ok := p.GetXMLValue(xml_body, "Status").(string); ok {
 		if status == "1" || status == "0" {
 			resp.respChan <- status
 			close(resp.respChan)
 			return
 		}
 	}
-
-	//resp.respChan <- struct{}{}
-	//close(resp.respChan)
 }
 
-func (s *Server) ParseGetResponse(xml_body any, host string) {
+func ParseGetResponse(xml_body any, host string) {
 
 	s.log("ParseGetResponse")
 

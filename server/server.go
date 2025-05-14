@@ -12,7 +12,7 @@ import (
 
 	"github.com/clbanning/mxj/v2"
 	"github.com/dgrijalva/lfu-go"
-	_ "github.com/ecpartan/soap-server-tr069/internal/xml"
+	xml_utils "github.com/ecpartan/soap-server-tr069/internal/xml"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/tasks"
@@ -43,7 +43,7 @@ type responseTask struct {
 // Server a SOAP server, which can be run standalone or used as a http.HandlerFunc
 type Server struct {
 	handlers        map[string]map[string]map[string]*operationHandler
-	Marshaller      XMLMarshaller
+	Marshaller      xml_utils.XMLMarshaller
 	RequestModifyFn func(r *http.Request) *http.Request
 	context         context.Context
 	Cache           *lfu.Cache
@@ -55,7 +55,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		handlers:    make(map[string]map[string]map[string]*operationHandler),
-		Marshaller:  defaultMarshaller{},
+		Marshaller:  xml_utils.DefaultMarshaller{},
 		context:     context.Background(),
 		Cache:       lfu.New(),
 		mapResponse: make(map[string]responseTask),
@@ -164,7 +164,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			logger.LogDebug("body_task", getScript)
 			if err := tasks.ParseScriptToTask(getScript); err != nil {
-				s.log("error", err)
+				logger.LogDebug("error", err)
 				return
 			}
 			execute_connection_request()
@@ -174,7 +174,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// we have a valid request time to call the handler
-	w = &responseWriter{
+	w = &httpserver.ResponseWriter{
 		w:             w,
 		outputStarted: false,
 	}
@@ -246,7 +246,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.log("SetParameterValuesResponse")
 			s.GetTasks(w, addr)
 		case AddObjectResponse:
-			s.ParseAddResponse(xml_body, addr)
+			tasks.ParseAddResponse(xml_body, addr)
 			s.log("AddObjectResponse")
 			s.GetTasks(w, addr)
 		case DeleteObjectResponse:

@@ -8,12 +8,12 @@ type XMLMarshaller interface {
 	Unmarshal(xml []byte, v interface{}) error
 }
 
-type defaultMarshaller struct{}
+type DefaultMarshaller struct{}
 
-func (dm defaultMarshaller) Marshal(v interface{}) ([]byte, error) {
+func (dm DefaultMarshaller) Marshal(v interface{}) ([]byte, error) {
 	return xml.MarshalIndent(v, "", "	")
 }
 
-func (dm defaultMarshaller) Unmarshal(xmlBytes []byte, v interface{}) error {
+func (dm DefaultMarshaller) Unmarshal(xmlBytes []byte, v interface{}) error {
 	return xml.Unmarshal(xmlBytes, v)
 }

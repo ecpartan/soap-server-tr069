@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
-	rep "github.com/ecpartan/soap-server-tr069/repository"
 	"github.com/ecpartan/soap-server-tr069/tasks"
 )
 
@@ -16,33 +16,33 @@ func PrepareHeaderInfo(ctx context.Context, mp any) {
 	envinfo := EnvInfo{}
 
 	if mp != nil {
-		soap_env_obj := rep.GetXMLValue(mp, "xmlns:SOAP-ENV")
-		soap_env := rep.GetXMLValue(soap_env_obj, "#text").(string)
+		soap_env_obj := p.GetXMLValue(mp, "xmlns:SOAP-ENV")
+		soap_env := p.GetXMLValue(soap_env_obj, "#text").(string)
 		if soap_env != "" {
 			envinfo.SOAPENV = soap_env
 		}
 
-		soap_enc_obj := rep.GetXMLValue(mp, "xmlns:SOAP-ENC")
-		soap_enc := rep.GetXMLValue(soap_enc_obj, "#text").(string)
+		soap_enc_obj := p.GetXMLValue(mp, "xmlns:SOAP-ENC")
+		soap_enc := p.GetXMLValue(soap_enc_obj, "#text").(string)
 		logger.LogDebug("soap_env", soap_env)
 		if soap_enc != "" {
 			envinfo.SOAPENC = soap_enc
 		}
 
-		cwmp_obj := rep.GetXMLValue(mp, "xmlns:cwmp")
-		cwmp := rep.GetXMLValue(cwmp_obj, "#text").(string)
+		cwmp_obj := p.GetXMLValue(mp, "xmlns:cwmp")
+		cwmp := p.GetXMLValue(cwmp_obj, "#text").(string)
 		if cwmp != "" {
 			envinfo.Cwmp = cwmp
 		}
 
-		xsi_obj := rep.GetXMLValue(mp, "xmlns:xsi")
-		xsi := rep.GetXMLValue(xsi_obj, "#text").(string)
+		xsi_obj := p.GetXMLValue(mp, "xmlns:xsi")
+		xsi := p.GetXMLValue(xsi_obj, "#text").(string)
 		if xsi != "" {
 			envinfo.Xsi = xsi
 		}
 
-		xsd_obj := rep.GetXMLValue(mp, "xmlns:xsd")
-		xsd := rep.GetXMLValue(xsd_obj, "#text").(string)
+		xsd_obj := p.GetXMLValue(mp, "xmlns:xsd")
+		xsd := p.GetXMLValue(xsd_obj, "#text").(string)
 		if xsd != "" {
 			envinfo.Xsd = xsd
 		}
@@ -191,24 +191,24 @@ func CheckSoapType(ctx context.Context, addr string, mv map[string]interface{}) 
 		return nil, ResponseEndSession
 	}
 
-	envelope := GetXMLValueS(mv, "SOAP-ENV:Envelope")
+	envelope := p.GetXMLValueS(mv, "SOAP-ENV:Envelope")
 
 	if envelope == nil {
 		logger.LogDebug("envelope is not parseMapXML")
 		return nil, ResponseUndefinded
 	} else {
-		attrs := GetXMLValueMap(envelope, "#attr")
+		attrs := p.GetXMLValueMap(envelope, "#attr")
 
 		PrepareHeaderInfo(ctx, attrs)
 
-		bod := rep.GetXMLValue(envelope, "SOAP-ENV:Body")
+		bod := p.GetXMLValue(envelope, "SOAP-ENV:Body")
 
 		if bod != nil {
-			inf := rep.GetXMLValue(bod, "cwmp:Inform")
+			inf := p.GetXMLValue(bod, "cwmp:Inform")
 
 			if inf != nil {
 				logger.LogDebug("found Inform")
-				serial := GetXMLValueS(inf, "DeviceId.SerialNumber.#text").(string)
+				serial := p.GetXMLValueS(inf, "DeviceId.SerialNumber.#text").(string)
 				if serial != "" {
 					tasks.AddDevicetoTaskList(serial, addr)
 				}
@@ -216,10 +216,10 @@ func CheckSoapType(ctx context.Context, addr string, mv map[string]interface{}) 
 				if _, ok := ctx.Value("DeviceID").(DeviceId); !ok {
 
 					id := DeviceId{
-						Manufacturer: GetXMLValueS(inf, "DeviceId.Manufacturer.#text").(string),
-						OUI:          GetXMLValueS(inf, "DeviceId.OUI.#text").(string),
-						ProductClass: GetXMLValueS(inf, "DeviceId.ProductClass.#text").(string),
-						SerialNumber: GetXMLValueS(inf, "DeviceId.SerialNumber.#text").(string),
+						Manufacturer: p.GetXMLValueS(inf, "DeviceId.Manufacturer.#text").(string),
+						OUI:          p.GetXMLValueS(inf, "DeviceId.OUI.#text").(string),
+						ProductClass: p.GetXMLValueS(inf, "DeviceId.ProductClass.#text").(string),
+						SerialNumber: p.GetXMLValueS(inf, "DeviceId.SerialNumber.#text").(string),
 					}
 
 					ctx = context.WithValue(ctx, "DeviceID", id)
@@ -229,22 +229,22 @@ func CheckSoapType(ctx context.Context, addr string, mv map[string]interface{}) 
 				return inf.(map[string]interface{}), Inform
 			}
 
-			ret := GetXMLValue(bod, "cwmp:GetParameterValuesResponse")
+			ret := p.GetXMLValue(bod, "cwmp:GetParameterValuesResponse")
 
 			if ret != nil {
 				return ret.(map[string]interface{}), GetParameterValuesResponse
 			}
-			ret = GetXMLValue(bod, "cwmp:SetParameterValuesResponse")
+			ret = p.GetXMLValue(bod, "cwmp:SetParameterValuesResponse")
 
 			if ret != nil {
 				return ret.(map[string]interface{}), SetParameterValuesResponse
 			}
 
-			ret = GetXMLValue(bod, "cwmp:AddObjectResponse")
+			ret = p.GetXMLValue(bod, "cwmp:AddObjectResponse")
 			if ret != nil {
 				return ret.(map[string]interface{}), AddObjectResponse
 			}
-			ret = GetXMLValue(bod, "cwmp:DeleteObjectResponse")
+			ret = p.GetXMLValue(bod, "cwmp:DeleteObjectResponse")
 			if ret != nil {
 				return ret.(map[string]interface{}), DeleteObjectResponse
 			}
@@ -260,7 +260,7 @@ func ParseEventCode(mp map[string]interface{}) SetMap {
 	codes := make(SetMap)
 
 	if mp != nil {
-		events := GetXMLValueS(mp, "Event.EventStruct")
+		events := p.GetXMLValueS(mp, "Event.EventStruct")
 		if events == nil {
 			return codes
 		}
@@ -272,7 +272,7 @@ func ParseEventCode(mp map[string]interface{}) SetMap {
 				logger.LogDebug("event", map_event)
 				if event == "EventCode" {
 
-					eventCode := GetXMLValue(map_event, "#text").(string)
+					eventCode := p.GetXMLValue(map_event, "#text").(string)
 
 					switch eventCode {
 					case "0 BOOTSTRAP":

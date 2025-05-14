@@ -7,6 +7,7 @@ import (
 	"sort"
 	"sync"
 
+	_ "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
