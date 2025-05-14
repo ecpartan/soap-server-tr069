@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"soap-server-tr069/httpserver"
 	"sync"
+
+	"github.com/ecpartan/soap-server-tr069/httpserver"
 
 	"github.com/clbanning/mxj/v2"
 	"github.com/dgrijalva/lfu-go"

@@ -14,7 +14,7 @@ func GetXMLValueS(xmlMap any, key string) any {
 		return GetXMLValue(xmlMap, strs[0])
 	}
 
-	for i := 0; i < len(strs); i++ {
+	for i := range strs {
 		xmlMap = GetXMLValue(xmlMap, strs[i])
 	}
 
@@ -22,10 +22,10 @@ func GetXMLValueS(xmlMap any, key string) any {
 }
 
 func GetXMLValueMap(xmlMap any, key string) map[string]any {
-	if parseMap, ok := xmlMap.(map[string]any); !ok {
+	if mp, ok := xmlMap.(map[string]any); !ok {
 		return nil
 	} else {
-		if value, ok := parseMap[key]; ok {
+		if value, ok := mp[key]; ok {
 			return value.(map[string]any)
 		}
 	}
@@ -33,10 +33,10 @@ func GetXMLValueMap(xmlMap any, key string) map[string]any {
 }
 
 func GetXMLValue(xmlMap any, key string) any {
-	if parseMap, ok := xmlMap.(map[string]any); !ok {
+	if mp, ok := xmlMap.(map[string]any); !ok {
 		return nil
 	} else {
-		if value, ok := parseMap[key]; ok {
+		if value, ok := mp[key]; ok {
 			return value
 		}
 	}

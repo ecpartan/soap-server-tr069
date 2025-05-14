@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	_ "github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
@@ -281,13 +281,13 @@ func parseTask(task map[string]any) (*Task, error) {
 	return nil, errors.New("Task is invalid")
 }
 func ParseScriptToTask(getScript map[string]any) error {
-	script := GetXMLValue(getScript, "Script")
+	script := p.GetXMLValue(getScript, "Script")
 
 	if script == nil {
 		return errors.New("Script is empty")
 	}
 
-	serial := GetXMLValue(script, "Serial").(string)
+	serial := p.GetXMLValue(script, "Serial").(string)
 	if serial == "" {
 		return errors.New("Serial is empty")
 	}
