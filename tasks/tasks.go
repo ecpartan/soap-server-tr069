@@ -10,18 +10,6 @@ import (
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
-type TaskType int
-
-const (
-	Inform TaskType = iota
-	GetParameterValuesResponse
-	SetParameterValuesResponse
-	AddObjectResponse
-	DeleteObjectResponse
-	ResponseUndefinded
-	ResponseEndSession
-)
-
 type TaskRequestType int
 
 const (

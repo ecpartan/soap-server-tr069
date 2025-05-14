@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
-	"github.com/ecpartan/soap-server-tr069/log"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/server"
 	"github.com/ecpartan/soap-server-tr069/tasks"
-
 	//"github.com/globusdigital/soap"
-	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
 // FooResponse a simple response
@@ -53,22 +52,6 @@ func RunServer() {
 		func(request interface{}, w http.ResponseWriter, httpRequest *http.Request) (response interface{}, err error) {
 			fmt.Println("exiting")
 
-			t := dac.NewTransport("", "")
-			req, err := http.NewRequest("POST", "http://localhost:8999/", nil)
-
-			if err != nil {
-				log.log.Fatalln(err)
-			}
-
-			resp, err := t.RoundTrip(req)
-			if err != nil {
-				log.Fatalln(err)
-			}
-
-			defer resp.Body.Close()
-
-			fmt.Println(resp)
-			response = nil
 			return
 		},
 	)
@@ -80,8 +63,9 @@ func RunServer() {
 
 func main() {
 	//soap.InitCache(100)
-	log.InitLogger(os.Stdout)
-	log.LogDebug("Starting server")
+
+	logger.InitLogger(os.Stdout)
+	logger.LogDebug("Starting server")
 
 	tasks.InitTasks()
 	RunServer()

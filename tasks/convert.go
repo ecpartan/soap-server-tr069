@@ -3,6 +3,8 @@ package tasks
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ecpartan/soap-server-tr069/server"
 )
 
 func SetValueInJSON(iface interface{}, path string, value interface{}) interface{} {
@@ -42,7 +44,7 @@ func SetBodyToMap(paramlist []any) map[string]any {
 	mp := make((map[string]any), len(paramlist))
 
 	for _, v := range paramlist {
-		name := GetXMLValue(GetXMLValue(v, "Name"), "#text")
+		name := server.GetXMLValue(GetXMLValue(v, "Name"), "#text")
 		value := GetXMLValue(GetXMLValue(v, "Value"), "#text")
 
 		if n, ok := name.(string); ok {
