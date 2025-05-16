@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	logger "github.com/ecpartan/soap-server-tr069/log"
-	"github.com/ecpartan/soap-server-tr069/soap"
 )
 
 // XMLMarshaller lets you inject your favourite custom xml implementation
@@ -32,6 +31,10 @@ func (dm *DefaultMarshaller) Unmarshal(xmlBytes []byte, v interface{}) error {
 type ResponseWriter struct {
 	w             http.ResponseWriter
 	outputStarted bool
+}
+
+func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
+	return &ResponseWriter{w: w}
 }
 
 func (w *ResponseWriter) Header() http.Header {
@@ -69,22 +72,17 @@ func TransmitXMLReq(request interface{}, w http.ResponseWriter, contentType stri
 	// Adjust namespaces for SOAP 1.2
 
 	if err != nil {
-		HandleError(fmt.Errorf("could not marshal response:: %s", err), w, contentType)
+		HandleError(fmt.Errorf("could not marshal response:: %s", err), w)
 	}
 	addSOAPHeader(w, len(xmlBytes), contentType)
 	w.Write(xmlBytes)
 
 }
-func HandleError(err error, w http.ResponseWriter, contentType string) {
+func HandleError(err error, w http.ResponseWriter) {
 	// has to write a soap fault
 	logger.LogDebug("handling error:", err)
-	responseEnvelope := &soap.Envelope{}
-	xmlBytes, xmlErr := newDefaultMarshaller().Marshal(responseEnvelope)
-	if xmlErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "could not marshal soap fault for: %s xmlError: %s\n", err, xmlErr)
-		return
-	}
-	addSOAPHeader(w, len(xmlBytes), contentType)
-	w.Write(xmlBytes)
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("Error " + err.Error()))
+
+	return
 }

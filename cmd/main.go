@@ -9,7 +9,6 @@ import (
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/server"
 	"github.com/ecpartan/soap-server-tr069/tasks"
-	//"github.com/globusdigital/soap"
 )
 
 // FooResponse a simple response

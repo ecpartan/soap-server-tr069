@@ -6,79 +6,81 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ecpartan/soap-server-tr069/soap"
+	"github.com/ecpartan/soap-server-tr069/httpserver"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
-func NextTask(serial, addr string) (TaskRequestType, Task) {
+func NextTask(serial, addr string) Task {
 
 	CheckNewConReqTasks(serial, addr)
 	tasks := GetListTasksBySerial(serial, addr)
 
 	if len(tasks) == 0 {
-		return NoTaskRequestR, Task{}
+		return Task{Action: NoTask}
 	}
 
 	eventCodes := s.context.Value("codes").(soap.SetMap)
 
 	for _, task := range tasks {
-		if _, ok := eventCodes[task.eventCode]; !ok {
+		if _, ok := eventCodes[task.EventCode]; !ok {
 			continue
 		}
-		s.log("Action", task.action)
-		switch task.action {
-		case "GetParmeterValues":
+		switch task.Action {
+		case GetParameterValues:
 			{
-				s.log("GetParmeterValues")
-				DeleteTaskByID(serial, addr, task.id)
+				logger.LogDebug("GetParmeterValues", task)
+				DeleteTaskByID(serial, addr, task.ID)
 
-				return GetParameterValuesR, task
+				return task
 			}
-		case "SetParameterValues":
+		case SetParameterValues:
 			{
-				s.log("SetParmeterValues")
-				s.log(task)
-				DeleteTaskByID(serial, addr, task.id)
-				s.log(task)
+				logger.LogDebug("GetParmeterValues", task)
+				DeleteTaskByID(serial, addr, task.ID)
 
-				return SetParameterValuesR, task
+				return task
 			}
-		case "AddObject":
+		case AddObject:
 			{
-				s.log("AddObject")
-				DeleteTaskByID(serial, addr, task.id)
-				return AddObjectR, task
+				logger.LogDebug("AddObject", task)
+				DeleteTaskByID(serial, addr, task.ID)
+				return task
 			}
-		case "DeleteObject":
+		case DeleteObject:
 			{
-				s.log("DeleteObject")
-				DeleteTaskByID(serial, addr, task.id)
-				return DeleteObjectR, task
+				logger.LogDebug("DeleteObject", task)
+				DeleteTaskByID(serial, addr, task.ID)
+				return task
 			}
 		}
 	}
 
-	return NoTaskRequestR, Task{}
+	return Task{Action: NoTask}
 }
 
-func ExecuteResponsetask(task_func func(w http.ResponseWriter, req any), task Task, host string, w http.ResponseWriter) {
+func executeResponsetask(task_func func(w http.ResponseWriter, req any), task Task, mapResponse *soap.Devmap, w http.ResponseWriter) {
 
 	s.wg.Add(1)
 	go func() {
-		s.log(task)
-		task_func(w, task.params)
+		task_func(w, task.Params)
 
-		if s.mapResponse[host].respChan == nil {
-			s.mapResponse[host] = responseTask{
+		if mapResponse.RespChan == nil {
+			mapResponse = soap.ResponseTask{
 				respChan: make(chan any),
 				respList: make([]any, 0),
 			}
 		}
-		ret := <-s.mapResponse[host].respChan
+		ret := <-mapResponse.respChan
 		s.log("executeResponsetask", ret)
 		respTask := s.mapResponse[host]
 		respTask.respList = append(respTask.respList, ret)
 		s.mapResponse[host] = respTask
 		s.log("executeResponsetask", s.mapResponse)
+	}()
+
+	go func() {
+		s.wg.Wait()
+		s.log("wg.Wait")
 	}()
 }
 
@@ -143,60 +145,41 @@ func PrepareListTask(task Task, host string) {
 
 }
 
-func ExecuteTask(Action TaskRequestType, task Task, host string, w http.ResponseWriter) {
+func ExecuteTask(task Task, host string, w http.ResponseWriter) {
 
-	if task.action == "" {
-		return
-	}
+	PrepareListTask(task, host)
 
-	switch Action {
-	case GetParameterValuesR:
+	switch task.Action {
+	case GetParameterValues:
 		{
-
-			s.executeResponsetask(s.TransGetParameterValues, task, host, w)
+			executeResponsetask(soap.TransGetParameterValues, task, host, w)
 		}
-	case SetParameterValuesR:
+	case SetParameterValues:
 		{
 
-			PrepareListTask(task, host)
-			s.executeResponsetask(s.TransSetParameterValues, task, host, w)
+			executeResponsetask(httpserver.TransSetParameterValues, task, host, w)
 		}
 
-	case AddObjectR:
+	case AddObject:
 		{
-			s.log("AddObjectR")
-			s.executeResponsetask(s.TransAddObject, task, host, w)
+			executeResponsetask(httpserver.TransAddObject, task, host, w)
 		}
 
-	case DeleteObjectR:
+	case DeleteObject:
 		{
-			s.log("DeleteObjectR")
-			s.executeResponsetask(s.TransDeleteObject, task, host, w)
+			executeResponsetask(httpserver.TransDeleteObject, task, host, w)
 		}
 	}
-	s.wg.Wait()
-	s.log("ExecuteTask end")
 }
 
-func GetTasks(w http.ResponseWriter, host string) {
-	var serial string
-	if deviceID, ok := s.context.Value("DeviceID").(DeviceId); ok {
-		s.log("deviceID", deviceID)
-		serial = deviceID.SerialNumber
-	}
-	if serial == "" {
-		s.log("serial is empty")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+func GetTasks(w http.ResponseWriter, serial, host string) {
+	task := NextTask(serial, host)
 
-	taskAction, task := NextTask(serial, host)
-
-	if taskAction == NoTaskRequestR {
-		s.log("task is nil")
+	if task.Action == NoTask {
+		logger.LogDebug("task is nil")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	} else {
-		s.ExecuteTask(taskAction, task, host, w)
+		ExecuteTask(task, host, w)
 	}
 }

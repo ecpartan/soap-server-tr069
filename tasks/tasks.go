@@ -14,19 +14,19 @@ import (
 type TaskRequestType int
 
 const (
-	GetParameterValuesR TaskRequestType = iota
-	SetParameterValuesR
-	AddObjectR
-	DeleteObjectR
-	NoTaskRequestR
+	NoTask TaskRequestType = iota
+	GetParameterValues
+	SetParameterValues
+	AddObject
+	DeleteObject
 )
 
 type Task struct {
-	id        string
-	action    string
-	params    interface{}
-	eventCode int
-	once      bool
+	ID        string
+	Action    TaskRequestType
+	Params    interface{}
+	EventCode int
+	Once      bool
 }
 
 type TaskResponse struct {
@@ -151,7 +151,7 @@ func DeleteTaskByID(serial, host, id string) {
 	deviceID := deviceid{serial: serial, host: host}
 	if maptasks, ok := l.TaskList[deviceID]; ok {
 		for i, task := range maptasks {
-			if task.id == id {
+			if task.ID == id {
 				l.mu.Lock()
 				defer l.mu.Unlock()
 				l.TaskList[deviceID] = append(maptasks[:i], maptasks[i+1:]...)

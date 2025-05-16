@@ -1,6 +1,8 @@
 package parsemap
 
-import "strings"
+import (
+	"strings"
+)
 
 func GetXMLValueS(xmlMap any, key string) any {
 

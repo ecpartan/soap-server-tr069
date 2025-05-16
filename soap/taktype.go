@@ -9,5 +9,4 @@ const (
 	AddObjectResponse
 	DeleteObjectResponse
 	ResponseUndefinded
-	ResponseEndSession
 )

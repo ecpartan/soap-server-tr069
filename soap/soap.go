@@ -172,57 +172,17 @@ func typeConvert(s string) any {
 	return s
 }
 
-// UnmarshalXML implement xml.Unmarshaler
-/*
-func (b *SoapBody) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+type SoapResponse struct {
+	ContentType string
+	SoapVersion string
+	Env         EnvInfo
+	EventCodes  map[int]struct{}
+}
 
-	fmt.Println("Enter")
-
-	var (
-		token    xml.Token
-		err      error
-		consumed bool
-	)
-
-Loop:
-	for {
-		if token, err = d.Token(); err != nil {
-			return err
-		}
-
-		if token == nil {
-			break
-		}
-
-		switch se := token.(type) {
-		case xml.StartElement:
-			if consumed {
-				return xml.UnmarshalError("Found multiple elements inside SOAP body; not wrapped-document/literal WS-I compliant")
-			} else if se.Name.Space == "http://schemas.xmlsoap.org/soap/envelope/" && se.Name.Local == "Fault" {
-
-				err = d.DecodeElement(Fault{}, &se)
-				if err != nil {
-					return err
-				}
-
-				consumed = true
-			} else {
-				b.SOAPBodyContentType = se.Name.Local
-				if err = d.DecodeElement(b.Inform, &se); err != nil {
-					return err
-				}
-
-				consumed = true
-			}
-		case xml.EndElement:
-			break Loop
-		}
+func InitSoapResponse() SoapResponse {
+	return SoapResponse{
+		ContentType: SoapContentType11,
+		SoapVersion: SoapVersion11,
+		Env:         EnvInfo{},
 	}
-
-	return nil
 }
-
-func (f *Fault) Error() string {
-	return f.String
-}
-*/

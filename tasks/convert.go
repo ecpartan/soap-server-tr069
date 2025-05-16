@@ -3,6 +3,7 @@ package tasks
 import (
 	"strings"
 
+	"github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 )
@@ -90,9 +91,8 @@ func ParseAddResponse(xml_body any, host string) {
 
 	logger.LogDebug("ParseAddResponse")
 	logger.LogDebug("body,", xml_body)
-	resp := s.mapResponse[host]
+	resp := mapResponse[host]
 	if status, ok := p.GetXMLValueS(xml_body, "Status.#text").(string); ok {
-		s.log(status)
 		if status == "1" || status == "0" {
 			s.log("Return:", status)
 
@@ -147,9 +147,8 @@ func ParseSetResponse(xml_body any, host string) {
 
 func ParseGetResponse(xml_body any, host string) {
 
-	s.log("ParseGetResponse")
+	paramlist := parsemap.GetXMLValueS(xml_body, "ParameterList.ParameterValueStruct").([]any)
 
-	paramlist := GetXMLValueS(xml_body, "ParameterList.ParameterValueStruct").([]any)
 	if paramlist == nil {
 		return
 	}
