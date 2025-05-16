@@ -1,12 +1,11 @@
 package soap
 
 import (
-	"context"
 	"strconv"
 
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
-	"github.com/ecpartan/soap-server-tr069/tasks"
 )
 
 func PrepareHeaderInfo(envelope any) EnvInfo {
@@ -68,11 +67,11 @@ func NewInformResponse(env EnvInfo) *InformResponse {
 	return resp
 }
 
-func NewGetParameterValues(paramlist tasks.GetParamTask, env EnvInfo) *GetParameterValues {
+func NewGetParameterValues(paramlist taskmodel.GetParamTask, env EnvInfo) *GetParameterValues {
 	logger.LogDebug("NewGetParameterValues")
 	resp := &GetParameterValues{}
 
-	resp.EnvInfo = mp.Env
+	resp.EnvInfo = env
 
 	/*
 		getnames := make([]string, len(paramlist.Name))
@@ -87,21 +86,11 @@ func NewGetParameterValues(paramlist tasks.GetParamTask, env EnvInfo) *GetParame
 	return resp
 }
 
-func NewSetParameterValues(ctx context.Context, paramlist []tasks.SetParamTask) *SetParameterValues {
+func NewSetParameterValues(paramlist []taskmodel.SetParamTask, env EnvInfo) *SetParameterValues {
 
 	resp := &SetParameterValues{}
 
-	envInfo, ok := ctx.Value("EnvInfo").(EnvInfo)
-	if !ok {
-		logger.LogDebug("NewSetParameterValues failed")
-		return nil
-	}
-
-	resp.SOAPENV = envInfo.SOAPENV
-	resp.SOAPENC = envInfo.SOAPENC
-	resp.Cwmp = envInfo.Cwmp
-	resp.Xsd = envInfo.Xsd
-	resp.Xsi = envInfo.Xsi
+	resp.EnvInfo = env
 
 	paramstruct := &resp.Body.SetParameterValues.ParameterList.SetParameterValueStruct
 	for _, param := range paramlist {
@@ -122,20 +111,10 @@ func NewSetParameterValues(ctx context.Context, paramlist []tasks.SetParamTask) 
 	return resp
 }
 
-func NewAddObject(obj string) *AddObject {
+func NewAddObject(obj string, env EnvInfo) *AddObject {
 	resp := &AddObject{}
 
-	envInfo, ok := ctx.Value("EnvInfo").(EnvInfo)
-	if !ok {
-		logger.LogDebug("NewAddObject failed")
-		return nil
-	}
-
-	resp.SOAPENV = envInfo.SOAPENV
-	resp.SOAPENC = envInfo.SOAPENC
-	resp.Cwmp = envInfo.Cwmp
-	resp.Xsd = envInfo.Xsd
-	resp.Xsi = envInfo.Xsi
+	resp.EnvInfo = env
 
 	resp.Body.AddObject.ObjectName = obj
 	resp.Header.ID.MustUnderstand = "1"
@@ -143,20 +122,8 @@ func NewAddObject(obj string) *AddObject {
 	return resp
 }
 
-func NewDeleteObject(obj string) *DeleteObject {
+func NewDeleteObject(obj string, env EnvInfo) *DeleteObject {
 	resp := &DeleteObject{}
-
-	envInfo, ok := ctx.Value("EnvInfo").(EnvInfo)
-	if !ok {
-		logger.LogDebug("NewAddObject failed")
-		return nil
-	}
-
-	resp.SOAPENV = envInfo.SOAPENV
-	resp.SOAPENC = envInfo.SOAPENC
-	resp.Cwmp = envInfo.Cwmp
-	resp.Xsd = envInfo.Xsd
-	resp.Xsi = envInfo.Xsi
 
 	resp.Body.DeleteObject.ObjectName = obj
 	resp.Header.ID.MustUnderstand = "1"
@@ -167,40 +134,43 @@ func NewDeleteObject(obj string) *DeleteObject {
 func ParseEventCode(mp map[string]any) map[int]struct{} {
 	codes := make(map[int]struct{})
 
-	if mp != nil {
-		events := p.GetXMLValueS(mp, "Event.EventStruct")
-		if events == nil {
-			return codes
-		}
+	if mp == nil {
+		return codes
+	}
 
-		logger.LogDebug("events", events)
-		if list_events, ok := events.(map[string]any); ok {
+	events := p.GetXMLValueS(mp, "Event.EventStruct")
+	if events == nil {
+		return codes
+	}
 
-			for event, map_event := range list_events {
-				logger.LogDebug("event", map_event)
-				if event == "EventCode" {
+	logger.LogDebug("events", events)
+	if list_events, ok := events.(map[string]any); ok {
 
-					eventCode := p.GetXMLValue(map_event, "#text").(string)
+		for event, map_event := range list_events {
+			logger.LogDebug("event", map_event)
+			if event == "EventCode" {
 
-					switch eventCode {
-					case "0 BOOTSTRAP":
-						codes[0] = struct{}{}
-					case "1 BOOT":
-						codes[1] = struct{}{}
-					case "2 PERIODIC":
-						codes[2] = struct{}{}
-					case "3 SCHEDULED":
-						codes[3] = struct{}{}
-					case "4 VALUE CHANGE":
-						codes[4] = struct{}{}
-					case "6 CONNECTION REQUEST":
-						codes[6] = struct{}{}
-					case "7 TRANSFER COMPLETE":
-						codes[7] = struct{}{}
-					}
+				eventCode := p.GetXMLValue(map_event, "#text").(string)
+
+				switch eventCode {
+				case "0 BOOTSTRAP":
+					codes[0] = struct{}{}
+				case "1 BOOT":
+					codes[1] = struct{}{}
+				case "2 PERIODIC":
+					codes[2] = struct{}{}
+				case "3 SCHEDULED":
+					codes[3] = struct{}{}
+				case "4 VALUE CHANGE":
+					codes[4] = struct{}{}
+				case "6 CONNECTION REQUEST":
+					codes[6] = struct{}{}
+				case "7 TRANSFER COMPLETE":
+					codes[7] = struct{}{}
 				}
 			}
 		}
 	}
+
 	return codes
 }

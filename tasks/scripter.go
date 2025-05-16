@@ -5,12 +5,16 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
-	"github.com/ecpartan/soap-server-tr069/httpserver"
+	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
+	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/soap"
+	"github.com/ecpartan/soap-server-tr069/soaprpc"
 )
 
-func NextTask(serial, addr string) Task {
+func NextTask(serial, addr string, evcodes map[int]struct{}) Task {
 
 	CheckNewConReqTasks(serial, addr)
 	tasks := GetListTasksBySerial(serial, addr)
@@ -19,10 +23,8 @@ func NextTask(serial, addr string) Task {
 		return Task{Action: NoTask}
 	}
 
-	eventCodes := s.context.Value("codes").(soap.SetMap)
-
 	for _, task := range tasks {
-		if _, ok := eventCodes[task.EventCode]; !ok {
+		if _, ok := evcodes[task.EventCode]; !ok {
 			continue
 		}
 		switch task.Action {
@@ -58,29 +60,16 @@ func NextTask(serial, addr string) Task {
 	return Task{Action: NoTask}
 }
 
-func executeResponsetask(task_func func(w http.ResponseWriter, req any), task Task, mapResponse *soap.Devmap, w http.ResponseWriter) {
+func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap.SoapResponse), task Task, rp devmodel.ResponseTask, sp *soap.SoapResponse, wg *sync.WaitGroup, w http.ResponseWriter) {
 
-	s.wg.Add(1)
+	wg.Add(1)
 	go func() {
-		task_func(w, task.Params)
-
-		if mapResponse.RespChan == nil {
-			mapResponse = soap.ResponseTask{
-				respChan: make(chan any),
-				respList: make([]any, 0),
-			}
-		}
-		ret := <-mapResponse.respChan
-		s.log("executeResponsetask", ret)
-		respTask := s.mapResponse[host]
-		respTask.respList = append(respTask.respList, ret)
-		s.mapResponse[host] = respTask
-		s.log("executeResponsetask", s.mapResponse)
-	}()
-
-	go func() {
-		s.wg.Wait()
-		s.log("wg.Wait")
+		defer wg.Done()
+		task_func(w, task.Params, sp)
+		ret := <-rp.RespChan
+		logger.LogDebug("executeResponsetask", ret)
+		rp.RespList = append(rp.RespList, ret)
+		logger.LogDebug("executeResponsetask", rp)
 	}()
 }
 
@@ -98,44 +87,44 @@ func SubstringInstance(message string, start, end byte) (bool, int, int) {
 	return false, -1, -1
 }
 
-func PrepareListTask(task Task, host string) {
+func PrepareListTask(task Task, rp devmodel.ResponseTask) {
 
-	lst := s.mapResponse[host].respList
-	s.log("PrepareListTask", lst, len(lst))
-	s.log("PrepareListTask", task)
-	if len(lst) <= 0 {
+	logger.LogDebug("PrepareListTask", rp.RespList)
+	logger.LogDebug("PrepareListTask", task)
+
+	if len(rp.RespList) <= 0 {
 		return
 	}
 
-	switch task.action {
-	case "SetParameterValues":
+	switch task.Action {
+	case SetParameterValues:
 		{
-			s.log("SetParmeterValues")
-			task_params := task.params.([]SetParamTask)
-			s.log("tasks", task_params)
+			logger.LogDebug("SetParmeterValues")
+			task_params := task.Params.([]taskmodel.SetParamTask)
+			logger.LogDebug("tasks", task_params)
 
 			for k, v := range task_params {
 				str := v.Name
 				if ok, start, end := SubstringInstance(str, '#', '.'); ok {
 					replacing_trim := str[start:end]
-					s.log("replacing_trim", replacing_trim)
+					logger.LogDebug("replacing_trim", replacing_trim)
 					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil {
-						if replace_trim, ok := lst[i].(string); ok {
+						if replace_trim, ok := rp.RespList[i].(string); ok {
 							task_params[k].Name = str[:start] + replace_trim + str[end:]
-							s.log("tasks", task_params)
+							logger.LogDebug("tasks", task_params)
 						}
 					}
 				}
 			}
 		}
-	case "AddObject":
+	case AddObject:
 		{
-			task_params := task.params.(AddTask)
+			task_params := task.Params.(taskmodel.AddTask)
 			str := task_params.Name
 			if ok, start, end := SubstringInstance(str, '#', '.'); ok {
 				replacing_trim := str[start:end]
 				if i, err := strconv.Atoi(replacing_trim[1:]); err == nil {
-					if replace_trim, ok := lst[i].(string); ok {
+					if replace_trim, ok := rp.RespList[i].(string); ok {
 						task_params.Name = str[:start] + replace_trim + str[end:]
 					}
 				}
@@ -145,41 +134,45 @@ func PrepareListTask(task Task, host string) {
 
 }
 
-func ExecuteTask(task Task, host string, w http.ResponseWriter) {
-
-	PrepareListTask(task, host)
-
-	switch task.Action {
-	case GetParameterValues:
-		{
-			executeResponsetask(soap.TransGetParameterValues, task, host, w)
-		}
-	case SetParameterValues:
-		{
-
-			executeResponsetask(httpserver.TransSetParameterValues, task, host, w)
-		}
-
-	case AddObject:
-		{
-			executeResponsetask(httpserver.TransAddObject, task, host, w)
-		}
-
-	case DeleteObject:
-		{
-			executeResponsetask(httpserver.TransDeleteObject, task, host, w)
-		}
-	}
-}
-
-func GetTasks(w http.ResponseWriter, serial, host string) {
-	task := NextTask(serial, host)
+func GetTasks(w http.ResponseWriter, host string, mp devmodel.ResponseTask, sp *soap.SoapResponse, wg *sync.WaitGroup) {
+	task := NextTask(mp.Serial, host, sp.EventCodes)
 
 	if task.Action == NoTask {
 		logger.LogDebug("task is nil")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	} else {
-		ExecuteTask(task, host, w)
+		PrepareListTask(task, mp)
+		ExecuteTask(task, host, wg, mp, sp, w)
 	}
+}
+
+func ExecuteTask(task Task, host string, wg *sync.WaitGroup, rp devmodel.ResponseTask, sp *soap.SoapResponse, w http.ResponseWriter) {
+
+	switch task.Action {
+	case GetParameterValues:
+		{
+			executeResponsetask(soaprpc.TransGetParameterValues, task, rp, sp, wg, w)
+		}
+	case SetParameterValues:
+		{
+
+			executeResponsetask(soaprpc.TransSetParameterValues, task, rp, sp, wg, w)
+		}
+
+	case AddObject:
+		{
+			executeResponsetask(soaprpc.TransAddObject, task, rp, sp, wg, w)
+		}
+
+	case DeleteObject:
+		{
+			executeResponsetask(soaprpc.TransDeleteObject, task, rp, sp, wg, w)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		logger.LogDebug("wg.Wait")
+	}()
 }

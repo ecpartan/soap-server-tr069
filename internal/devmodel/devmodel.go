@@ -1,13 +1,10 @@
 package devmodel
 
-import "sync"
-
 type ResponseTask struct {
 	RespChan chan any
 	Serial   string
 	RespList []any
 	Body     map[string]any
-	wg       sync.WaitGroup
 }
 
 func InitResponseTask() ResponseTask {
@@ -19,9 +16,10 @@ func InitResponseTask() ResponseTask {
 	}
 }
 
+/*
 type DevMap map[string](ResponseTask)
 
-/*
+
 func (d *DevMap) Delete(key string) {
 	delete(*d, key)
 }

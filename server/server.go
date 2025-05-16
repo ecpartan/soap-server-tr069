@@ -17,7 +17,7 @@ import (
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/soap"
-	"github.com/ecpartan/soap-server-tr069/soap/soaprpc"
+	"github.com/ecpartan/soap-server-tr069/soaprpc"
 	"github.com/ecpartan/soap-server-tr069/tasks"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
@@ -42,6 +42,7 @@ type DevID struct {
 
 type DevMap struct {
 	sync.RWMutex
+	Wg   *sync.WaitGroup
 	devs map[string]*DevID
 }
 
@@ -109,6 +110,10 @@ func execute_connection_request() (*http.Response, error) {
 }
 
 func (s *Server) ParseXML(addr string, mv map[string]any) soap.TaskType {
+	logger.LogDebug("ParseXML", mv)
+	if mv == nil {
+		return soap.ResponseUndefinded
+	}
 	envelope := p.GetXMLValueS(mv, "SOAP-ENV:Envelope")
 
 	if envelope == nil {
@@ -118,6 +123,7 @@ func (s *Server) ParseXML(addr string, mv map[string]any) soap.TaskType {
 
 		mp := s.mapResponse.Get(addr)
 
+		logger.LogDebug("mapresponse", mp)
 		mp.Env = soap.PrepareHeaderInfo(envelope)
 
 		bod := p.GetXMLValue(envelope, "SOAP-ENV:Body")
@@ -168,7 +174,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	soapAction := r.Header.Get("SOAPAction")
 	addr := r.RemoteAddr
 	logger.LogDebug("ServeHTTP method:", r.Method, ", path:", r.URL.Path, ",  soapAction:", soapAction)
-	logger.LogDebug("mapresponse", s.mapResponse)
 
 	if r.URL.Path == "/request" {
 		execute_connection_request()
@@ -215,27 +220,25 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var mv map[string]interface{}
+		var mv map[string]any
 
 		mv, err = mxj.NewMapXmlSeq(soapRequestBytes)
 
 		paramType := soap.ResponseUndefinded
+
 		mp := s.mapResponse.Get(addr)
+		if mp == nil {
+			s.mapResponse.Set(addr, &DevID{})
+			mp = s.mapResponse.Get(addr)
+		}
 
 		if err != nil || mv == nil {
 			logger.LogDebug("End session")
-
-			task := tasks.NextTask(mp.Serial, addr)
-
-			if task.Action == tasks.NoTask {
-				logger.LogDebug("task is nil")
-				w.WriteHeader(http.StatusNoContent)
-				return
-			} else {
-				tasks.ExecuteTask(task, addr, w)
-			}
+			tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
 		} else {
 			paramType = s.ParseXML(addr, mv)
+			logger.LogDebug("mapresponse", s.mapResponse)
+
 			xml_body := mp.Body
 
 			logger.LogDebug("found soap type", paramType, xml_body)
@@ -247,21 +250,21 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case soap.Inform:
 				soaprpc.TransInformResponse(w, mp.ResponseTask.Body, &mp.SoapResponse)
 			case soap.GetParameterValuesResponse:
-				tasks.ParseGetResponse(mp.ResponseTask.Body, addr)
+				tasks.ParseGetResponse(mp.ResponseTask.Body, mp.Serial, mp.RespChan, s.Cache)
 				logger.LogDebug("GetParameterValuesResponse")
-				tasks.GetTasks(w, mapResponse, addr)
+				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
 			case soap.SetParameterValuesResponse:
-				tasks.ParseSetResponse(xml_body, addr)
+				tasks.ParseSetResponse(xml_body, mp.RespChan)
 				logger.LogDebug("SetParameterValuesResponse")
-				tasks.GetTasks(w, addr)
+				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
 			case soap.AddObjectResponse:
-				tasks.ParseAddResponse(xml_body, addr)
+				tasks.ParseAddResponse(mp.Body, mp.RespChan)
 				logger.LogDebug("AddObjectResponse")
-				tasks.GetTasks(w, addr)
+				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
 			case soap.DeleteObjectResponse:
-				tasks.ParseDeleteResponse(xml_body, addr)
+				tasks.ParseDeleteResponse(xml_body, mp.RespChan)
 				logger.LogDebug("DeleteObjectResponse")
-				tasks.GetTasks(w, addr)
+				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
 			default:
 				break
 			}

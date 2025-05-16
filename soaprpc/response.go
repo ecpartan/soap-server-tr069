@@ -1,61 +1,56 @@
-package response
+package soaprpc
 
 import (
 	"net/http"
 
 	"github.com/ecpartan/soap-server-tr069/httpserver"
+	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
-	"github.com/ecpartan/soap-server-tr069/tasks"
+	"github.com/ecpartan/soap-server-tr069/soap"
 )
 
-func TransInformResponse(w http.ResponseWriter, xml_body map[string]any, soaptask *SoapResponse) {
+func TransInformResponse(w http.ResponseWriter, xml_body map[string]any, sp *soap.SoapResponse) {
 
 	logger.LogDebug("Enter TransInform")
-	soaptask.EventCodes = ParseEventCode(xml_body)
+	sp.EventCodes = soap.ParseEventCode(xml_body)
 
-	responseEnvelope := NewInformResponse(soaptask.Env)
-	httpserver.TransmitXMLReq(responseEnvelope, w, soaptask.ContentType)
+	responseEnvelope := soap.NewInformResponse(sp.Env)
+	httpserver.TransmitXMLReq(responseEnvelope, w, sp.ContentType)
 }
 
-func TransGetParameterValues(w http.ResponseWriter, xml_body any, soaptask *SoapResponse) {
+func TransGetParameterValues(w http.ResponseWriter, req any, sp *soap.SoapResponse) {
 
 	logger.LogDebug("TransGetParameterValues")
 
-	if getList, ok := xml_body.(tasks.GetParamTask); ok {
-		responseEnvelope := NewGetParameterValues(getList, soaptask.Env)
-		httpserver.TransmitXMLReq(responseEnvelope, w, soaptask.ContentType)
-		soaptask.wg.Done()
+	if getList, ok := req.(taskmodel.GetParamTask); ok {
+		responseEnvelope := soap.NewGetParameterValues(getList, sp.Env)
+		httpserver.TransmitXMLReq(responseEnvelope, w, sp.ContentType)
 	}
 }
 
-func TransSetParameterValues(w http.ResponseWriter, req any) {
+func TransSetParameterValues(w http.ResponseWriter, req any, sp *soap.SoapResponse) {
 	logger.LogDebug("TransSetParameterValues")
 
-	if setList, ok := req.([]tasks.SetParamTask); ok {
-
-		responseEnvelope := NewSetParameterValues(setList)
-		s.TransmitXMLReq(responseEnvelope, w)
-		s.wg.Done()
+	if setList, ok := req.([]taskmodel.SetParamTask); ok {
+		responseEnvelope := soap.NewSetParameterValues(setList, sp.Env)
+		httpserver.TransmitXMLReq(responseEnvelope, w, sp.ContentType)
 	}
 }
 
-func TransAddObject(w http.ResponseWriter, req any) {
+func TransAddObject(w http.ResponseWriter, req any, sp *soap.SoapResponse) {
 	logger.LogDebug("TransAddObjectResponse")
-	if addInst, ok := req.(tasks.AddTask); ok {
-		responseEnvelope := NewAddObject(addInst.Name)
-		s.TransmitXMLReq(responseEnvelope, w)
-		s.wg.Done()
-		logger.LogDebug("add object success")
+
+	if addInst, ok := req.(taskmodel.AddTask); ok {
+		responseEnvelope := soap.NewAddObject(addInst.Name, sp.Env)
+		httpserver.TransmitXMLReq(responseEnvelope, w, sp.ContentType)
 	}
 }
 
-func TransDeleteObject(w http.ResponseWriter, req any) {
+func TransDeleteObject(w http.ResponseWriter, req any, sp *soap.SoapResponse) {
 	logger.LogDebug("TransDeleteObjectResponse")
-	if DelInst, ok := req.(string); !ok {
-		return
-	} else {
-		responseEnvelope := NewDeleteObject(DelInst)
-		s.TransmitXMLReq(responseEnvelope, w)
-		s.wg.Done()
+
+	if DelInst, ok := req.(string); ok {
+		responseEnvelope := soap.NewDeleteObject(DelInst, sp.Env)
+		httpserver.TransmitXMLReq(responseEnvelope, w, sp.ContentType)
 	}
 }

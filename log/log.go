@@ -15,7 +15,7 @@ import (
 // logFilter represent a custom logger seting
 var logFilter = &logutils.LevelFilter{
 	Levels:   []logutils.LogLevel{"DEBUG", "INFO", "ERROR", "CRITICAL"},
-	MinLevel: logutils.LogLevel("INFO"),
+	MinLevel: logutils.LogLevel("DEBUG"),
 	Writer:   os.Stdout,
 }
 
@@ -31,11 +31,11 @@ func SetLevel(lev string) {
 }
 
 // caller return caller function name
-func LogDebug(mes string, args ...interface{}) {
+func LogDebug(mes string, args ...any) {
 	printMsg("[DEBUG]", 0, mes, args...)
 }
 
-func printMsg(level string, depth int, mes string, args ...interface{}) {
+func printMsg(level string, depth int, mes string, args ...any) {
 	// Chek for appropriate level of logging
 	if logFilter.Check([]byte(level)) {
 		argsStr := getArgsString(args...) // get formated string with arguments
@@ -49,7 +49,7 @@ func printMsg(level string, depth int, mes string, args ...interface{}) {
 }
 
 // getArgsString return formated string with arguments
-func getArgsString(args ...interface{}) (argsStr string) {
+func getArgsString(args ...any) (argsStr string) {
 	for _, arg := range args {
 		if arg != nil {
 			argsStr = argsStr + fmt.Sprintf("'%v', ", arg)

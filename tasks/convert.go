@@ -3,6 +3,7 @@ package tasks
 import (
 	"strings"
 
+	"github.com/dgrijalva/lfu-go"
 	"github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
@@ -87,18 +88,18 @@ func updateJsonParams(paramlist []any, mp map[string]any) map[string]any {
 	return mp
 }
 
-func ParseAddResponse(xml_body any, host string) {
+func ParseAddResponse(xml_body any, respchan chan<- any) {
 
 	logger.LogDebug("ParseAddResponse")
 	logger.LogDebug("body,", xml_body)
-	resp := mapResponse[host]
+
 	if status, ok := p.GetXMLValueS(xml_body, "Status.#text").(string); ok {
 		if status == "1" || status == "0" {
-			s.log("Return:", status)
+			logger.LogDebug("Return:", status)
 
 			if number, ok := p.GetXMLValueS(xml_body, "InstanceNumber.#text").(string); ok {
 
-				resp.respChan <- number
+				respchan <- number
 
 				//close(resp.respChan)
 				return
@@ -110,16 +111,15 @@ func ParseAddResponse(xml_body any, host string) {
 	//close(resp.respChan)
 }
 
-func ParseDeleteResponse(xml_body any, host string) {
+func ParseDeleteResponse(xml_body any, respchan chan<- any) {
 
-	logger.LogDebug("ParseDeleteResponse")
-	s.log(xml_body)
-	resp := s.mapResponse[host]
+	logger.LogDebug("ParseAddResponse")
+	logger.LogDebug("body,", xml_body)
 
-	if status, ok := GetXMLValue(xml_body, "Status").(string); ok {
+	if status, ok := p.GetXMLValue(xml_body, "Status").(string); ok {
 		if status == "1" || status == "0" {
-			resp.respChan <- status
-			close(resp.respChan)
+			respchan <- status
+			close(respchan)
 			return
 		}
 	}
@@ -128,47 +128,44 @@ func ParseDeleteResponse(xml_body any, host string) {
 	//close(resp.respChan)
 }
 
-func ParseSetResponse(xml_body any, host string) {
+func ParseSetResponse(xml_body any, respchan chan<- any) {
 
-	s.log("ParseSetResponse")
-	s.log(xml_body)
-	resp := s.mapResponse[host]
-	if resp.respChan == nil {
+	logger.LogDebug("ParseAddResponse")
+	logger.LogDebug("body,", xml_body)
+
+	if respchan == nil {
 		return
 	}
 	if status, ok := p.GetXMLValue(xml_body, "Status").(string); ok {
 		if status == "1" || status == "0" {
-			resp.respChan <- status
-			close(resp.respChan)
+			respchan <- status
+			close(respchan)
 			return
 		}
 	}
 }
 
-func ParseGetResponse(xml_body any, host string) {
+func ParseGetResponse(xml_body any, serial string, respchan chan<- any, l *lfu.Cache) {
+
+	logger.LogDebug("ParseGetResponse")
+	logger.LogDebug("body,", xml_body)
 
 	paramlist := parsemap.GetXMLValueS(xml_body, "ParameterList.ParameterValueStruct").([]any)
 
-	if paramlist == nil {
+	if paramlist == nil || respchan == nil {
 		return
 	}
-	resp := s.mapResponse[host]
 
-	if deviceID, ok := s.context.Value("DeviceID").(DeviceId); ok {
-		device_cache := s.Cache.Get(deviceID.SerialNumber)
-		if device_cache == nil {
-			device_cache = make(map[string]any)
-		}
-		if device_cache, ok := device_cache.(map[string]any); ok {
-			s.log("device_cache", device_cache)
-			new_device_cache := updateJsonParams(paramlist, device_cache)
-			s.Cache.Set(deviceID.SerialNumber, new_device_cache)
-		}
+	device_cache := l.Get(serial)
+	if device_cache == nil {
+		device_cache = make(map[string]any)
+	}
+	if device_cache, ok := device_cache.(map[string]any); ok {
+		logger.LogDebug("device_cache", device_cache)
+		new_device_cache := updateJsonParams(paramlist, device_cache)
+		l.Set(serial, new_device_cache)
 	}
 
-	if resp.respChan == nil {
-		return
-	}
-	resp.respChan <- paramlist
-	//close(resp.respChan)
+	respchan <- paramlist
+	close(respchan)
 }

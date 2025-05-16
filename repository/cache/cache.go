@@ -134,3 +134,15 @@ func (c *cache) Put(key string, value map[string]any) {
 	c.listMap[curr_node.freq] = list
 	c.nodeMap[key] = curr_node
 }
+
+/*
+func (c *cache) UpdateCacheBySerail(serial string) {
+	device_cache := c.Get(serial)
+	if device_cache == nil {
+		device_cache = make(map[string]any)
+	}
+	new_device_cache := updateJsonParams(paramlist, device_cache)
+		s.Cache.Set(deviceID.SerialNumber, new_device_cache)
+
+}
+*/

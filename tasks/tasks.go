@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
@@ -77,28 +78,6 @@ func (s *Scripter) RunTasks() {
 	}
 }
 
-type SetParamTask struct {
-	Name  string
-	Value string
-	Type  string
-}
-
-type GetParamTask struct {
-	Name []string
-}
-
-type AddTask struct {
-	Name string
-}
-
-type DeleteTask struct {
-	Name string
-}
-
-type SoapTask interface {
-	AddTask | DeleteTask | GetParamTask | SetParamTask | []SetParamTask
-}
-
 func InitTasks() {
 
 	l.TaskList = make(map[deviceid][]Task)
@@ -110,30 +89,28 @@ func InitTasks() {
 		paramlistSet = append(paramlistSet,
 			SetParamTask{Name: "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Name", Value: "pppoe_83", Type: "xsd:string"})
 	*/
-	/*
-		paramlistGet := GetParamTask{}
-		paramlistGet.Name = append(paramlistGet.Name, "InternetGatewayDevice.WANDevice.")
 
+	paramlistGet := taskmodel.GetParamTask{}
+	paramlistGet.Name = append(paramlistGet.Name, "InternetGatewayDevice.WANDevice.")
 
-		l.TaskList[deviceid{serial: "94DE80BF38B2", host: "127.0.0.1:8089"}] = []Task{
-			{
-				id:        gen_uuid(),
-				action:    "GetParmeterValues",
-				params:    paramlistGet,
-				once:      false,
-				eventCode: 1,
-			},
-			{
-				id:        gen_uuid(),
-				action:    "GetParmeterValues",
-				params:    paramlistGet,
-				once:      false,
-				eventCode: 2,
-			},
+	l.TaskList[deviceid{serial: "94DE80BF38B2", host: "127.0.0.1:8089"}] = []Task{
+		{
+			ID:        utils.Gen_uuid(),
+			Action:    GetParameterValues,
+			Params:    paramlistGet,
+			Once:      false,
+			EventCode: 1,
+		},
+		{
+			ID:        utils.Gen_uuid(),
+			Action:    GetParameterValues,
+			Params:    paramlistGet,
+			Once:      false,
+			EventCode: 2,
+		},
+	}
+	fmt.Println(l.TaskList)
 
-		}
-		fmt.Println(l.TaskList)
-	*/
 }
 
 /*
@@ -198,15 +175,15 @@ func AddDevicetoTaskList(serial, addr string) {
 	l.mu.Unlock()
 }
 
-func createSetParamTask(mapTask []any) []SetParamTask {
+func createSetParamTask(mapTask []any) []taskmodel.SetParamTask {
 
-	var settask []SetParamTask
-	settask = make([]SetParamTask, 0)
+	var settask []taskmodel.SetParamTask
+	settask = make([]taskmodel.SetParamTask, 0)
 
 	for _, v := range mapTask {
 
 		if iter_map, ok := v.(map[string]any); ok {
-			curr_task := SetParamTask{}
+			curr_task := taskmodel.SetParamTask{}
 			for k, v := range iter_map {
 
 				switch k {
@@ -235,43 +212,43 @@ func parseTask(task map[string]any) (*Task, error) {
 			switch k {
 			case "AddObject":
 				return &Task{
-					id:     utils.Gen_uuid(),
-					action: "AddObject",
-					params: AddTask{
+					ID:     utils.Gen_uuid(),
+					Action: AddObject,
+					Params: taskmodel.AddTask{
 						Name: mapTask["Name"].(string),
 					},
-					once:      true,
-					eventCode: 6,
+					Once:      true,
+					EventCode: 6,
 				}, nil
 			case "DeleteObject":
 				return &Task{
-					id:     utils.Gen_uuid(),
-					action: "DeleteObject",
-					params: DeleteTask{
+					ID:     utils.Gen_uuid(),
+					Action: DeleteObject,
+					Params: taskmodel.DeleteTask{
 						Name: mapTask["Name"].(string),
 					},
-					once:      true,
-					eventCode: 6,
+					Once:      true,
+					EventCode: 6,
 				}, nil
 			case "GetParameterValues":
 				return &Task{
-					id:     utils.Gen_uuid(),
-					action: "GetParameterValues",
-					params: GetParamTask{
+					ID:     utils.Gen_uuid(),
+					Action: GetParameterValues,
+					Params: taskmodel.GetParamTask{
 						Name: mapTask["Name"].([]string),
 					},
-					once:      true,
-					eventCode: 6,
+					Once:      true,
+					EventCode: 6,
 				}, nil
 			}
 		} else if arrayTask, ok := v.([]any); ok {
 			if k == "SetParameterValues" {
 				return &Task{
-					id:        utils.Gen_uuid(),
-					action:    "SetParameterValues",
-					params:    createSetParamTask(arrayTask),
-					once:      true,
-					eventCode: 6,
+					ID:        utils.Gen_uuid(),
+					Action:    SetParameterValues,
+					Params:    createSetParamTask(arrayTask),
+					Once:      true,
+					EventCode: 6,
 				}, nil
 			}
 		}
