@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/lfu-go"
-	"github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 )
@@ -88,7 +87,7 @@ func updateJsonParams(paramlist []any, mp map[string]any) map[string]any {
 	return mp
 }
 
-func ParseAddResponse(xml_body any, respchan chan<- any) {
+func ParseAddResponse(xml_body any, respchan chan any) {
 
 	logger.LogDebug("ParseAddResponse")
 	logger.LogDebug("body,", xml_body)
@@ -98,17 +97,11 @@ func ParseAddResponse(xml_body any, respchan chan<- any) {
 			logger.LogDebug("Return:", status)
 
 			if number, ok := p.GetXMLValueS(xml_body, "InstanceNumber.#text").(string); ok {
-
 				respchan <- number
-
-				//close(resp.respChan)
-				return
+				close(respchan)
 			}
 		}
 	}
-
-	//resp.respChan <- struct{}{}
-	//close(resp.respChan)
 }
 
 func ParseDeleteResponse(xml_body any, respchan chan<- any) {
@@ -120,12 +113,8 @@ func ParseDeleteResponse(xml_body any, respchan chan<- any) {
 		if status == "1" || status == "0" {
 			respchan <- status
 			close(respchan)
-			return
 		}
 	}
-
-	//resp.respChan <- struct{}{}
-	//close(resp.respChan)
 }
 
 func ParseSetResponse(xml_body any, respchan chan<- any) {
@@ -140,19 +129,19 @@ func ParseSetResponse(xml_body any, respchan chan<- any) {
 		if status == "1" || status == "0" {
 			respchan <- status
 			close(respchan)
-			return
 		}
 	}
 }
 
-func ParseGetResponse(xml_body any, serial string, respchan chan<- any, l *lfu.Cache) {
+func ParseGetResponse(xml_body any, serial string, respchan chan any, l *lfu.Cache) {
 
 	logger.LogDebug("ParseGetResponse")
 	logger.LogDebug("body,", xml_body)
 
-	paramlist := parsemap.GetXMLValueS(xml_body, "ParameterList.ParameterValueStruct").([]any)
+	paramlist := p.GetXMLValueS(xml_body, "ParameterList.ParameterValueStruct").([]any)
 
 	if paramlist == nil || respchan == nil {
+		close(respchan)
 		return
 	}
 

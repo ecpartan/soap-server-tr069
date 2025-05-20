@@ -49,6 +49,7 @@ type DevMap struct {
 func NewDevMap() DevMap {
 	return DevMap{
 		devs: make(map[string]*DevID),
+		Wg:   &sync.WaitGroup{},
 	}
 }
 
@@ -145,16 +146,16 @@ func (s *Server) ParseXML(addr string, mv map[string]any) soap.TaskType {
 			mp.Body = inf.(map[string]any)
 			mp.Serial = serial
 			status = soap.Inform
-		} else if ret := p.GetXMLValue(bod, "cwmp:GetParameterValuesResponse").(map[string]any); ret != nil {
+		} else if ret, ok := p.GetXMLValue(bod, "cwmp:GetParameterValuesResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.GetParameterValuesResponse
-		} else if ret := p.GetXMLValue(bod, "cwmp:SetParameterValuesResponse").(map[string]any); ret != nil {
+		} else if ret, ok := p.GetXMLValue(bod, "cwmp:SetParameterValuesResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.SetParameterValuesResponse
-		} else if ret := p.GetXMLValue(bod, "cwmp:AddObjectResponse").(map[string]any); ret != nil {
+		} else if ret, ok := p.GetXMLValue(bod, "cwmp:AddObjectResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.AddObjectResponse
-		} else if ret := p.GetXMLValue(bod, "cwmp:DeleteObjectResponse").(map[string]any); ret != nil {
+		} else if ret, ok := p.GetXMLValue(bod, "cwmp:DeleteObjectResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.DeleteObjectResponse
 		}
@@ -202,7 +203,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// we have a valid request time to call the handler
-	w = httpserver.NewResponseWriter(w)
+	w = &httpserver.ResponseWriter{W: w, OutputStarted: false}
 
 	switch r.Method {
 	case "POST":
@@ -228,13 +229,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		mp := s.mapResponse.Get(addr)
 		if mp == nil {
-			s.mapResponse.Set(addr, &DevID{})
+			s.mapResponse.Set(addr, &DevID{
+				SoapResponse: soap.InitSoapResponse(),
+				ResponseTask: devmodel.InitResponseTask(),
+			})
 			mp = s.mapResponse.Get(addr)
 		}
 
 		if err != nil || mv == nil {
 			logger.LogDebug("End session")
-			tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
+			if tasks.GetTasks(w, addr, &mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg) {
+				return
+			}
+
 		} else {
 			paramType = s.ParseXML(addr, mv)
 			logger.LogDebug("mapresponse", s.mapResponse)
@@ -248,23 +255,33 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				httpserver.HandleError(fmt.Errorf("unknown XML Soap Type"), w)
 				return
 			case soap.Inform:
-				soaprpc.TransInformResponse(w, mp.ResponseTask.Body, &mp.SoapResponse)
+				if !w.(*httpserver.ResponseWriter).OutputStarted {
+					soaprpc.TransInformResponse(w, mp.ResponseTask.Body, &mp.SoapResponse)
+				}
 			case soap.GetParameterValuesResponse:
 				tasks.ParseGetResponse(mp.ResponseTask.Body, mp.Serial, mp.RespChan, s.Cache)
 				logger.LogDebug("GetParameterValuesResponse")
-				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
+				if tasks.GetTasks(w, addr, &mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg) {
+					return
+				}
 			case soap.SetParameterValuesResponse:
+
 				tasks.ParseSetResponse(xml_body, mp.RespChan)
 				logger.LogDebug("SetParameterValuesResponse")
-				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
+				if tasks.GetTasks(w, addr, &mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg) {
+					return
+				}
 			case soap.AddObjectResponse:
 				tasks.ParseAddResponse(mp.Body, mp.RespChan)
 				logger.LogDebug("AddObjectResponse")
-				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
+				tasks.GetTasks(w, addr, &mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
+
 			case soap.DeleteObjectResponse:
 				tasks.ParseDeleteResponse(xml_body, mp.RespChan)
 				logger.LogDebug("DeleteObjectResponse")
-				tasks.GetTasks(w, addr, mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg)
+				if tasks.GetTasks(w, addr, &mp.ResponseTask, &mp.SoapResponse, s.mapResponse.Wg) {
+					return
+				}
 			default:
 				break
 			}
@@ -273,5 +290,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		// this will be a soap fault !?
 		httpserver.HandleError(errors.New("this is a soap service - you have to POST soap requests"), w)
+
 	}
 }

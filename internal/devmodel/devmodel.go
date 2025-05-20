@@ -11,7 +11,7 @@ func InitResponseTask() ResponseTask {
 	return ResponseTask{
 		RespChan: make(chan any),
 		Serial:   "",
-		RespList: nil,
+		RespList: make([]any, 0, 10),
 		Body:     nil,
 	}
 }

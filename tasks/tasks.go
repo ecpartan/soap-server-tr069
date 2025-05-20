@@ -92,8 +92,25 @@ func InitTasks() {
 
 	paramlistGet := taskmodel.GetParamTask{}
 	paramlistGet.Name = append(paramlistGet.Name, "InternetGatewayDevice.WANDevice.")
-
-	l.TaskList[deviceid{serial: "94DE80BF38B2", host: "127.0.0.1:8089"}] = []Task{
+	/*
+		l.TaskList[deviceid{serial: "94DE80BF38B2", host: "127.0.0.1:8089"}] = []Task{
+			{
+				ID:        utils.Gen_uuid(),
+				Action:    GetParameterValues,
+				Params:    paramlistGet,
+				Once:      false,
+				EventCode: 1,
+			},
+			{
+				ID:        utils.Gen_uuid(),
+				Action:    GetParameterValues,
+				Params:    paramlistGet,
+				Once:      false,
+				EventCode: 2,
+			},
+		}
+	*/
+	scripterTasks["94DE80BF38B2"] = []Task{
 		{
 			ID:        utils.Gen_uuid(),
 			Action:    GetParameterValues,
@@ -109,7 +126,7 @@ func InitTasks() {
 			EventCode: 2,
 		},
 	}
-	fmt.Println(l.TaskList)
+	fmt.Println(scripterTasks)
 
 }
 
