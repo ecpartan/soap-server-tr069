@@ -274,16 +274,16 @@ func parseTask(task map[string]any) (*Task, error) {
 
 	return nil, errors.New("Task is invalid")
 }
-func ParseScriptToTask(getScript map[string]any) error {
+func ParseScriptToTask(getScript map[string]any) (string, error) {
 	script := p.GetXMLValue(getScript, "Script")
 
 	if script == nil {
-		return errors.New("Script is empty")
+		return "", errors.New("Script is empty")
 	}
 
-	serial := p.GetXMLValue(script, "Serial").(string)
-	if serial == "" {
-		return errors.New("Serial is empty")
+	serial, ok := p.GetXMLValue(script, "Serial").(string)
+	if !ok || serial == "" {
+		return "", errors.New("Serial is empty")
 	}
 
 	if scriptList, ok := script.(map[string]any); ok {
@@ -299,18 +299,16 @@ func ParseScriptToTask(getScript map[string]any) error {
 					find_task, err := parseTask(addtask)
 
 					if err != nil {
-						return err
+						return "", err
 					}
 					scripterTasks[serial] = append(scripterTasks[serial], *find_task)
 				}
 			}
-
 		}
 	}
 
-	return nil
+	return serial, nil
 }
-
 func CheckNewConReqTasks(serial, host string) {
 	id := deviceid{serial: serial, host: host}
 	if script_tasks, ok := scripterTasks[serial]; ok {

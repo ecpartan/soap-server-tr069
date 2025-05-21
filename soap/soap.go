@@ -174,7 +174,7 @@ func typeConvert(s string) any {
 
 type SoapResponse struct {
 	ContentType string
-	SoapVersion string
+	SoapVersion []byte
 	Env         EnvInfo
 	EventCodes  map[int]struct{}
 }
@@ -182,7 +182,7 @@ type SoapResponse struct {
 func InitSoapResponse() SoapResponse {
 	return SoapResponse{
 		ContentType: SoapContentType11,
-		SoapVersion: SoapVersion11,
+		SoapVersion: BNamespaceSoap11,
 		Env:         EnvInfo{},
 	}
 }

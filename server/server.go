@@ -100,17 +100,29 @@ func (s *Server) RegisterHandler(path string, action string, messageType string,
 	}
 }
 
-func execute_connection_request() (*http.Response, error) {
-	dr := dac.NewRequest("", "", "GET", "http://localhost:8999/", "")
-	response1, err := dr.Execute()
-	if err != nil {
-		logger.LogDebug("error in execute_connection_request")
-		return nil, err
+func (s *Server) execute_connection_request(serial string) (*http.Response, error) {
+
+	logger.LogDebug("execute_connection_request", serial)
+
+	mp := s.Cache.Get(serial)
+	if mp == nil {
+		logger.LogDebug("mp is nil")
+		return nil, errors.New("no found in cache ")
 	}
-	return response1, err
+	if crURL, ok := p.GetXMLValueS(mp, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL").(string); ok {
+		logger.LogDebug("crURL", crURL)
+		dr := dac.NewRequest("", "", "GET", crURL, "")
+		response1, err := dr.Execute()
+
+		if err != nil {
+			logger.LogDebug("error in execute_connection_request")
+			return response1, err
+		}
+	}
+	return nil, errors.New("no found addres for this device by SN")
 }
 
-func (s *Server) ParseXML(addr string, mv map[string]any) soap.TaskType {
+func (s *Server) ParseInform(addr string, mv map[string]any) soap.TaskType {
 	logger.LogDebug("ParseXML", mv)
 	if mv == nil {
 		return soap.ResponseUndefinded
@@ -127,13 +139,13 @@ func (s *Server) ParseXML(addr string, mv map[string]any) soap.TaskType {
 		logger.LogDebug("mapresponse", mp)
 		mp.Env = soap.PrepareHeaderInfo(envelope)
 
-		bod := p.GetXMLValue(envelope, "SOAP-ENV:Body")
+		xml_body := p.GetXMLValue(envelope, "SOAP-ENV:Body")
 
-		if bod == nil {
+		if xml_body == nil {
 			return soap.ResponseUndefinded
 		}
 		var status = soap.ResponseUndefinded
-		inf := p.GetXMLValue(bod, "cwmp:Inform")
+		inf := p.GetXMLValue(xml_body, "cwmp:Inform")
 
 		if inf != nil {
 			logger.LogDebug("found Inform")
@@ -143,19 +155,23 @@ func (s *Server) ParseXML(addr string, mv map[string]any) soap.TaskType {
 			}
 			tasks.AddDevicetoTaskList(serial, addr)
 
+			paramlist := p.GetXMLValueS(inf, "ParameterList.ParameterValueStruct").([]any)
+			logger.LogDebug("paramlist", paramlist)
+			tasks.UpdateCacheBySerial(serial, paramlist, s.Cache)
+
 			mp.Body = inf.(map[string]any)
 			mp.Serial = serial
 			status = soap.Inform
-		} else if ret, ok := p.GetXMLValue(bod, "cwmp:GetParameterValuesResponse").(map[string]any); ok {
+		} else if ret, ok := p.GetXMLValue(xml_body, "cwmp:GetParameterValuesResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.GetParameterValuesResponse
-		} else if ret, ok := p.GetXMLValue(bod, "cwmp:SetParameterValuesResponse").(map[string]any); ok {
+		} else if ret, ok := p.GetXMLValue(xml_body, "cwmp:SetParameterValuesResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.SetParameterValuesResponse
-		} else if ret, ok := p.GetXMLValue(bod, "cwmp:AddObjectResponse").(map[string]any); ok {
+		} else if ret, ok := p.GetXMLValue(xml_body, "cwmp:AddObjectResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.AddObjectResponse
-		} else if ret, ok := p.GetXMLValue(bod, "cwmp:DeleteObjectResponse").(map[string]any); ok {
+		} else if ret, ok := p.GetXMLValue(xml_body, "cwmp:DeleteObjectResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.DeleteObjectResponse
 		}
@@ -176,11 +192,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	addr := r.RemoteAddr
 	logger.LogDebug("ServeHTTP method:", r.Method, ", path:", r.URL.Path, ",  soapAction:", soapAction)
 
-	if r.URL.Path == "/request" {
-		execute_connection_request()
-		return
-	}
-
 	if r.URL.Path == "/addtask" {
 		logger.LogDebug("addtask")
 		soapRequestBytes, err := io.ReadAll(r.Body)
@@ -192,11 +203,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			logger.LogDebug("body_task", getScript)
-			if err := tasks.ParseScriptToTask(getScript); err != nil {
+
+			var serial string
+			serial, err = tasks.ParseScriptToTask(getScript)
+			if err != nil || serial == "" {
 				logger.LogDebug("error", err)
 				return
 			}
-			execute_connection_request()
+			if _, err := s.execute_connection_request(serial); err != nil {
+				logger.LogDebug("error", err)
+				return
+			}
 
 			return
 		}
@@ -243,7 +260,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			paramType = s.ParseXML(addr, mv)
+			paramType = s.ParseInform(addr, mv)
 			logger.LogDebug("mapresponse", s.mapResponse)
 
 			xml_body := mp.Body

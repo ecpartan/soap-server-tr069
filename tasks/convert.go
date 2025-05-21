@@ -8,8 +8,8 @@ import (
 	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
-func SetValueInJSON(iface interface{}, path string, value interface{}) interface{} {
-	m := iface.(map[string]interface{})
+func SetValueInJSON(iface any, path string, value any) any {
+	m := iface.(map[string]any)
 	split := strings.Split(path, ".")
 	for k, v := range m {
 		if strings.EqualFold(k, split[0]) {
@@ -18,7 +18,7 @@ func SetValueInJSON(iface interface{}, path string, value interface{}) interface
 				return m
 			}
 			switch v.(type) {
-			case map[string]interface{}:
+			case map[string]any:
 				return SetValueInJSON(v, strings.Join(split[1:], "."), value)
 			default:
 				return m
@@ -29,10 +29,10 @@ func SetValueInJSON(iface interface{}, path string, value interface{}) interface
 	if len(split) == 1 {
 		m[split[0]] = value
 	} else {
-		newMap := make(map[string]interface{})
+		newMap := make(map[string]any)
 		newMap[split[len(split)-1]] = value
 		for i := len(split) - 2; i > 0; i-- {
-			mTmp := make(map[string]interface{})
+			mTmp := make(map[string]any)
 			mTmp[split[i]] = newMap
 			newMap = mTmp
 		}
@@ -133,6 +133,18 @@ func ParseSetResponse(xml_body any, respchan chan<- any) {
 	}
 }
 
+func UpdateCacheBySerial(serial string, paramlist []any, l *lfu.Cache) {
+
+	device_cache := l.Get(serial)
+	if device_cache == nil {
+		device_cache = make(map[string]any)
+	}
+	if device_cache, ok := device_cache.(map[string]any); ok {
+		logger.LogDebug("device_cache", device_cache)
+		new_device_cache := updateJsonParams(paramlist, device_cache)
+		l.Set(serial, new_device_cache)
+	}
+}
 func ParseGetResponse(xml_body any, serial string, respchan chan any, l *lfu.Cache) {
 
 	logger.LogDebug("ParseGetResponse")
@@ -144,16 +156,7 @@ func ParseGetResponse(xml_body any, serial string, respchan chan any, l *lfu.Cac
 		close(respchan)
 		return
 	}
-
-	device_cache := l.Get(serial)
-	if device_cache == nil {
-		device_cache = make(map[string]any)
-	}
-	if device_cache, ok := device_cache.(map[string]any); ok {
-		logger.LogDebug("device_cache", device_cache)
-		new_device_cache := updateJsonParams(paramlist, device_cache)
-		l.Set(serial, new_device_cache)
-	}
+	UpdateCacheBySerial(serial, paramlist, l)
 
 	respchan <- paramlist
 	close(respchan)
