@@ -39,19 +39,8 @@ type codeResponse struct {
 	Code string
 }
 
-/*
-	type AddObject struct {
-		codeResponse
-		AddInstanse string
-	}
-*/
-type deviceid struct {
-	serial string
-	host   string
-}
-
 type ListTasks struct {
-	TaskList map[deviceid][]Task
+	TaskList map[string][]Task
 	mu       sync.Mutex
 }
 
@@ -62,14 +51,13 @@ var l ListTasks
 type Scripter struct {
 	tasks           []Task
 	responsechannel chan Task
+	mu              sync.Mutex
 }
 
 func (s *Scripter) AddTask(task Task) {
+	s.mu.Lock()
 	s.tasks = append(s.tasks, task)
-}
-
-func (s *Scripter) AddTaskList(tasklist []Task) {
-	s.tasks = append(s.tasks, tasklist...)
+	s.mu.Unlock()
 }
 
 func (s *Scripter) RunTasks() {
@@ -80,7 +68,7 @@ func (s *Scripter) RunTasks() {
 
 func InitTasks() {
 
-	l.TaskList = make(map[deviceid][]Task)
+	l.TaskList = make(map[string][]Task)
 	scripterTasks = make(map[string][]Task)
 	/*
 		paramlistSet := []SetParamTask{}
@@ -92,25 +80,8 @@ func InitTasks() {
 
 	paramlistGet := taskmodel.GetParamTask{}
 	paramlistGet.Name = append(paramlistGet.Name, "InternetGatewayDevice.WANDevice.")
-	/*
-		l.TaskList[deviceid{serial: "94DE80BF38B2", host: "127.0.0.1:8089"}] = []Task{
-			{
-				ID:        utils.Gen_uuid(),
-				Action:    GetParameterValues,
-				Params:    paramlistGet,
-				Once:      false,
-				EventCode: 1,
-			},
-			{
-				ID:        utils.Gen_uuid(),
-				Action:    GetParameterValues,
-				Params:    paramlistGet,
-				Once:      false,
-				EventCode: 2,
-			},
-		}
-	*/
-	scripterTasks["94DE80BF38B2"] = []Task{
+
+	l.TaskList["94DE80BF38B2"] = []Task{
 		{
 			ID:        utils.Gen_uuid(),
 			Action:    GetParameterValues,
@@ -126,6 +97,24 @@ func InitTasks() {
 			EventCode: 2,
 		},
 	}
+
+	/*
+		scripterTasks["94DE80BF38B2"] = []Task{
+			{
+				ID:        utils.Gen_uuid(),
+				Action:    GetParameterValues,
+				Params:    paramlistGet,
+				Once:      false,
+				EventCode: 1,
+			},
+			{
+				ID:        utils.Gen_uuid(),
+				Action:    GetParameterValues,
+				Params:    paramlistGet,
+				Once:      false,
+				EventCode: 2,
+			},
+		}*/
 	fmt.Println(scripterTasks)
 
 }
@@ -141,14 +130,13 @@ func InitTasks() {
 		}
 	}
 */
-func DeleteTaskByID(serial, host, id string) {
-	deviceID := deviceid{serial: serial, host: host}
-	if maptasks, ok := l.TaskList[deviceID]; ok {
+func DeleteTaskByID(serial, id string) {
+	if maptasks, ok := l.TaskList[serial]; ok {
 		for i, task := range maptasks {
 			if task.ID == id {
 				l.mu.Lock()
 				defer l.mu.Unlock()
-				l.TaskList[deviceID] = append(maptasks[:i], maptasks[i+1:]...)
+				l.TaskList[serial] = append(maptasks[:i], maptasks[i+1:]...)
 				break
 			}
 		}
@@ -159,7 +147,7 @@ func GetListTasksBySerial(serial, host string) []Task {
 	fmt.Println(l.TaskList)
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	ret_list := l.TaskList[deviceid{serial: serial, host: host}]
+	ret_list := l.TaskList[serial]
 	if len(ret_list) == 0 {
 		scripterTask := findParserTasks(serial)
 		if scripterTask != nil {
@@ -183,11 +171,10 @@ func findParserTasks(serial string) *Task {
 	return nil
 }
 
-func AddDevicetoTaskList(serial, addr string) {
-	id := deviceid{serial: serial, host: addr}
+func AddDevicetoTaskList(serial string) {
 	l.mu.Lock()
-	if _, ok := l.TaskList[id]; !ok {
-		l.TaskList[id] = []Task{}
+	if _, ok := l.TaskList[serial]; !ok {
+		l.TaskList[serial] = []Task{}
 	}
 	l.mu.Unlock()
 }
@@ -278,12 +265,12 @@ func ParseScriptToTask(getScript map[string]any) (string, error) {
 	script := p.GetXMLValue(getScript, "Script")
 
 	if script == nil {
-		return "", errors.New("Script is empty")
+		return "", errors.New("script is empty")
 	}
 
 	serial, ok := p.GetXMLValue(script, "Serial").(string)
 	if !ok || serial == "" {
-		return "", errors.New("Serial is empty")
+		return "", errors.New("serial is empty")
 	}
 
 	if scriptList, ok := script.(map[string]any); ok {
@@ -309,10 +296,9 @@ func ParseScriptToTask(getScript map[string]any) (string, error) {
 
 	return serial, nil
 }
-func CheckNewConReqTasks(serial, host string) {
-	id := deviceid{serial: serial, host: host}
+func CheckNewConReqTasks(serial string) {
 	if script_tasks, ok := scripterTasks[serial]; ok {
-		l.TaskList[id] = append(l.TaskList[id], script_tasks...)
+		l.TaskList[serial] = append(l.TaskList[serial], script_tasks...)
 		scripterTasks[serial] = []Task{}
 	}
 }

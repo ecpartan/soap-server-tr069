@@ -111,16 +111,6 @@ type SoapBody struct {
 	} `xml:"Inform"`
 }
 
-/*
-type SoapBody struct {
-	XMLName xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Body"`
-
-	Fault   *Fault      `xml:",omitempty"`
-	Content interface{} `xml:"cwmp:SetParameterValues"`
-
-	SOAPBodyContentType string `xml:"-"`
-}*/
-
 // Fault type
 type Fault struct {
 	XMLName xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Fault"`

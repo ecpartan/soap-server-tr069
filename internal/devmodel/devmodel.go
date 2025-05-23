@@ -1,10 +1,13 @@
 package devmodel
 
+import "sync"
+
 type ResponseTask struct {
 	RespChan chan any
 	Serial   string
 	RespList []any
 	Body     map[string]any
+	mu       sync.RWMutex
 }
 
 func InitResponseTask() ResponseTask {
@@ -16,29 +19,8 @@ func InitResponseTask() ResponseTask {
 	}
 }
 
-/*
-type DevMap map[string](ResponseTask)
-
-
-func (d *DevMap) Delete(key string) {
-	delete(*d, key)
+func (r *ResponseTask) InsertRespList(l any) {
+	r.mu.Lock()
+	r.RespList = append(r.RespList, l)
+	r.mu.Unlock()
 }
-
-func (d *DevMap) Get(key string) ResponseTask {
-	var value ResponseTask
-	if value, ok := (*d)[key]; ok {
-		return value
-	}
-	d.Set(key, value)
-	return value
-
-}
-
-func (d *DevMap) Set(key string, value ResponseTask) {
-	(*d)[key] = value
-}
-
-func NewDevMap() *DevMap {
-	return &DevMap{}
-}
-*/
