@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  server:
+    build: .
+    ports:
+    - "8089:8089"
+    restart: always
