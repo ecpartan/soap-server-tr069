@@ -2,9 +2,22 @@ package parsemap
 
 import (
 	"strings"
+
+	"github.com/clbanning/mxj/v2"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
-func GetXMLValueS(xmlMap any, key string) any {
+func ConvertXMLtoMap(in []byte) (map[string]any, error) {
+	var mv map[string]any
+	mv, err := mxj.NewMapXmlSeq(in)
+	if err != nil {
+		return nil, err
+	}
+	return mv, nil
+
+}
+func GetXML(xmlMap any, key string) any {
+	logger.LogDebug("Enter")
 
 	strs := strings.Split(key, ".")
 
@@ -13,31 +26,25 @@ func GetXMLValueS(xmlMap any, key string) any {
 	}
 
 	if len(strs) == 1 {
-		return GetXMLValue(xmlMap, strs[0])
+		return getXML(xmlMap, strs[0])
 	}
 
 	for i := range strs {
-		xmlMap = GetXMLValue(xmlMap, strs[i])
+		xmlMap = getXML(xmlMap, strs[i])
 	}
 
 	return xmlMap
 }
 
-func GetXMLValueMap(xmlMap any, key string) map[string]any {
-	if mp, ok := xmlMap.(map[string]any); !ok {
-		return nil
-	} else {
+func getXML(xmlMap any, key string) any {
+	logger.LogDebug("GetXML", key, xmlMap)
+
+	if mp, ok := xmlMap.(map[string]any); ok {
 		if value, ok := mp[key]; ok {
-			return value.(map[string]any)
+			return value
 		}
 	}
-	return nil
-}
-
-func GetXMLValue(xmlMap any, key string) any {
-	if mp, ok := xmlMap.(map[string]any); !ok {
-		return nil
-	} else {
+	if mp, ok := xmlMap.(map[string]string); ok {
 		if value, ok := mp[key]; ok {
 			return value
 		}

@@ -1,12 +1,21 @@
 package taskmodel
 
-type SetParamTask struct {
+type SetParamValTask struct {
 	Name  string
 	Value string
 	Type  string
 }
 
-type GetParamTask struct {
+type GetParamValTask struct {
+	Name []string
+}
+
+type GetParamNamesTask struct {
+	ParameterPath string
+	NextLevel     int
+}
+
+type GetParamAttrTask struct {
 	Name []string
 }
 
@@ -19,5 +28,5 @@ type DeleteTask struct {
 }
 
 type SoapTask interface {
-	AddTask | DeleteTask | GetParamTask | SetParamTask | []SetParamTask
+	AddTask | DeleteTask | GetParamValTask | SetParamValTask | []SetParamValTask
 }

@@ -45,7 +45,9 @@ func (w *ResponseWriter) Write(b []byte) (int, error) {
 	w.OutputStarted = true
 	logger.LogDebug("writing response: ", string(b))
 
-	return w.W.Write(b)
+	code, err := w.W.Write(b)
+	logger.LogDebug("code, err", code, err)
+	return code, err
 }
 
 func (w *ResponseWriter) WriteHeader(code int) {
@@ -68,7 +70,6 @@ func addSOAPHeader(w http.ResponseWriter, contentLength int, contentType string)
 }
 
 func TransmitXMLReq(request any, w http.ResponseWriter, contentType string) {
-	logger.LogDebug("TransmitXMLReq", request, contentType)
 	xmlBytes, err := newDefaultMarshaller().Marshal(request)
 	// Adjust namespaces for SOAP 1.2
 
@@ -76,8 +77,9 @@ func TransmitXMLReq(request any, w http.ResponseWriter, contentType string) {
 		HandleError(fmt.Errorf("could not marshal response:: %s", err), w)
 	}
 	addSOAPHeader(w, len(xmlBytes), contentType)
+
 	code, err := w.Write(xmlBytes)
-	logger.LogDebug("Error writing response: ", err, len(xmlBytes), code)
+	logger.LogDebug("Writing response: ", err, len(xmlBytes), code)
 
 }
 func HandleError(err error, w http.ResponseWriter) {

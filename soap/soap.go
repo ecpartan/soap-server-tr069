@@ -58,17 +58,16 @@ type Envelope struct {
 // Header type
 type Header struct {
 	XMLName xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Header"`
-
-	Header interface{}
+	Header  any
 }
 
 // Body type
 type Body struct {
 	XMLName xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Body"`
 
-	Fault               *Fault      `xml:",omitempty"`
-	Content             interface{} `xml:",omitempty"`
-	SOAPBodyContentType string      `xml:"-"`
+	Fault               *Fault `xml:",omitempty"`
+	Content             any    `xml:",omitempty"`
+	SOAPBodyContentType string `xml:"-"`
 }
 
 type SoapBody struct {
@@ -162,15 +161,15 @@ func typeConvert(s string) any {
 	return s
 }
 
-type SoapResponse struct {
+type SoapSessionInfo struct {
 	ContentType string
 	SoapVersion []byte
 	Env         EnvInfo
 	EventCodes  map[int]struct{}
 }
 
-func InitSoapResponse() SoapResponse {
-	return SoapResponse{
+func NewSoapSessionInfo() *SoapSessionInfo {
+	return &SoapSessionInfo{
 		ContentType: SoapContentType11,
 		SoapVersion: BNamespaceSoap11,
 		Env:         EnvInfo{},

@@ -13,36 +13,25 @@ func PrepareHeaderInfo(envelope any) EnvInfo {
 	logger.LogDebug("PrepareHeaderInfo")
 
 	envinfo := EnvInfo{}
-	mp := p.GetXMLValueMap(envelope, "#attr")
 
-	if mp != nil {
-		soap_env_obj := p.GetXMLValue(mp, "xmlns:SOAP-ENV")
-		soap_env := p.GetXMLValue(soap_env_obj, "#text").(string)
-		if soap_env != "" {
+	if p.GetXML(envelope, "#attr") == nil {
+		if soap_env, ok := p.GetXML(envelope, "#attr.xmlns:SOAP-ENV.#text").(string); ok {
 			envinfo.SOAPENV = soap_env
 		}
 
-		soap_enc_obj := p.GetXMLValue(mp, "xmlns:SOAP-ENC")
-		soap_enc := p.GetXMLValue(soap_enc_obj, "#text").(string)
-		if soap_enc != "" {
+		if soap_enc, ok := p.GetXML(envelope, "#attr.xmlns:SOAP-ENC.#text").(string); ok {
 			envinfo.SOAPENC = soap_enc
 		}
 
-		cwmp_obj := p.GetXMLValue(mp, "xmlns:cwmp")
-		cwmp := p.GetXMLValue(cwmp_obj, "#text").(string)
-		if cwmp != "" {
+		if cwmp, ok := p.GetXML(envelope, "#attr.xmlns:cwmp.#text").(string); ok {
 			envinfo.Cwmp = cwmp
 		}
 
-		xsi_obj := p.GetXMLValue(mp, "xmlns:xsi")
-		xsi := p.GetXMLValue(xsi_obj, "#text").(string)
-		if xsi != "" {
+		if xsi, ok := p.GetXML(envelope, "#attr.xmlns:xsi.#text").(string); ok {
 			envinfo.Xsi = xsi
 		}
 
-		xsd_obj := p.GetXMLValue(mp, "xmlns:xsd")
-		xsd := p.GetXMLValue(xsd_obj, "#text").(string)
-		if xsd != "" {
+		if xsd, ok := p.GetXML(envelope, "#attr.xmlns:xsd.#text").(string); ok {
 			envinfo.Xsd = xsd
 		}
 	} else {
@@ -67,17 +56,12 @@ func NewInformResponse(env EnvInfo) *InformResponse {
 	return resp
 }
 
-func NewGetParameterValues(paramlist taskmodel.GetParamTask, env EnvInfo) *GetParameterValues {
+func NewGetParameterValues(paramlist taskmodel.GetParamValTask, env EnvInfo) *GetParameterValues {
 	logger.LogDebug("NewGetParameterValues")
 	resp := &GetParameterValues{}
 
 	resp.EnvInfo = env
 
-	/*
-		getnames := make([]string, len(paramlist.Name))
-		for i, name := range paramlist.Name {
-			getnames[i] = name
-		}*/
 	resp.Body.GetParameterValues.ParameterNames.String = paramlist.Name
 	resp.Body.GetParameterValues.ParameterNames.ArrayType = "xsd:string[" + strconv.Itoa(len(paramlist.Name)) + "]"
 
@@ -86,7 +70,7 @@ func NewGetParameterValues(paramlist taskmodel.GetParamTask, env EnvInfo) *GetPa
 	return resp
 }
 
-func NewSetParameterValues(paramlist []taskmodel.SetParamTask, env EnvInfo) *SetParameterValues {
+func NewSetParameterValues(paramlist []taskmodel.SetParamValTask, env EnvInfo) *SetParameterValues {
 
 	resp := &SetParameterValues{}
 
@@ -111,6 +95,58 @@ func NewSetParameterValues(paramlist []taskmodel.SetParamTask, env EnvInfo) *Set
 	return resp
 }
 
+/*
+	func NewSetParameterAttributes(paramlist []taskmodel.SetParamValTask, env EnvInfo) *SetParameterAttributes {
+		resp := &SetParameterAttributes{}
+
+		resp.EnvInfo = env
+
+}
+*/
+func NewGetParameterAttributes(paramlist taskmodel.GetParamAttrTask, env EnvInfo) *GetParameterAttributes {
+	resp := &GetParameterAttributes{}
+
+	resp.EnvInfo = env
+	/*for _, param := range paramlist {
+		resp.Body.GetParameterAttributes.ParameterNames.String = append(resp.Body.GetParameterAttributes.ParameterNames.String, param.Name...)
+	}*/
+	resp.Body.GetParameterAttributes.ParameterNames.String = paramlist.Name
+	resp.Body.GetParameterAttributes.ParameterNames.ArrayType = "xsd:string[" + strconv.Itoa(len(paramlist.Name)) + "]"
+
+	resp.Header.ID.MustUnderstand = "1"
+	logger.LogDebug("paramstruct: %v", resp)
+
+	return resp
+}
+func NewGetParameterNames(paramlist taskmodel.GetParamNamesTask, env EnvInfo) *GetParameterNames {
+
+	resp := &GetParameterNames{}
+
+	resp.EnvInfo = env
+
+	resp.Body.GetParameterNames.ParameterPath = paramlist.ParameterPath
+	resp.Body.GetParameterNames.NextLevel = strconv.Itoa(paramlist.NextLevel)
+
+	logger.LogDebug("paramstruct: %v", resp)
+
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
+func NewGetRPCMethods(paramlist taskmodel.GetParamNamesTask, env EnvInfo) *GetRPCMethods {
+
+	resp := &GetRPCMethods{}
+
+	resp.EnvInfo = env
+
+	logger.LogDebug("paramstruct: %v", resp)
+
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
 func NewAddObject(obj string, env EnvInfo) *AddObject {
 	resp := &AddObject{}
 
@@ -124,6 +160,7 @@ func NewAddObject(obj string, env EnvInfo) *AddObject {
 
 func NewDeleteObject(obj string, env EnvInfo) *DeleteObject {
 	resp := &DeleteObject{}
+	resp.EnvInfo = env
 
 	resp.Body.DeleteObject.ObjectName = obj
 	resp.Header.ID.MustUnderstand = "1"
@@ -138,7 +175,7 @@ func ParseEventCode(mp map[string]any) map[int]struct{} {
 		return codes
 	}
 
-	events := p.GetXMLValueS(mp, "Event.EventStruct")
+	events := p.GetXML(mp, "Event.EventStruct")
 	if events == nil {
 		return codes
 	}
@@ -150,7 +187,7 @@ func ParseEventCode(mp map[string]any) map[int]struct{} {
 			logger.LogDebug("event", map_event)
 			if event == "EventCode" {
 
-				eventCode := p.GetXMLValue(map_event, "#text").(string)
+				eventCode := p.GetXML(map_event, "#text").(string)
 
 				switch eventCode {
 				case "0 BOOTSTRAP":

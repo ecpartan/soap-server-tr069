@@ -1,12 +1,20 @@
 package soap
 
-type TaskType int
+type TaskResponseType int
 
 const (
-	Inform TaskType = iota
+	Inform TaskResponseType = iota
 	GetParameterValuesResponse
 	SetParameterValuesResponse
+	GetRPCMethodsResponse
+	GetParameterNamesResponse
+	GetParameterAttributesResponse
+	SetParameterAttributesResponse
+	FactoryResetResponse
+	UploadResponse
+	DownloadResponse
 	AddObjectResponse
 	DeleteObjectResponse
+	TransferCompleteResponse
 	ResponseUndefinded
 )

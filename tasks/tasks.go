@@ -20,12 +20,20 @@ const (
 	SetParameterValues
 	AddObject
 	DeleteObject
+	GetParameterNames
+	SetParameterAttributes
+	GetParameterAttributes
+	GetRPCMethods
+	Download
+	Upload
+	FactoryReset
+	Reboot
 )
 
 type Task struct {
 	ID        string
 	Action    TaskRequestType
-	Params    interface{}
+	Params    any
 	EventCode int
 	Once      bool
 }
@@ -78,9 +86,16 @@ func InitTasks() {
 			SetParamTask{Name: "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Name", Value: "pppoe_83", Type: "xsd:string"})
 	*/
 
-	paramlistGet := taskmodel.GetParamTask{}
+	paramlistGet := taskmodel.GetParamValTask{}
 	paramlistGet.Name = append(paramlistGet.Name, "InternetGatewayDevice.WANDevice.")
 
+	paramsGetName := taskmodel.GetParamNamesTask{
+		ParameterPath: "InternetGatewayDevice.WANDevice.",
+		NextLevel:     0,
+	}
+	paramGetAttr := taskmodel.GetParamAttrTask{
+		Name: []string{"InternetGatewayDevice.WANDevice."},
+	}
 	l.TaskList["94DE80BF38B2"] = []Task{
 		{
 			ID:        utils.Gen_uuid(),
@@ -91,10 +106,17 @@ func InitTasks() {
 		},
 		{
 			ID:        utils.Gen_uuid(),
-			Action:    GetParameterValues,
-			Params:    paramlistGet,
+			Action:    GetParameterAttributes,
+			Params:    paramGetAttr,
 			Once:      false,
-			EventCode: 2,
+			EventCode: 1,
+		},
+		{
+			ID:        utils.Gen_uuid(),
+			Action:    GetParameterNames,
+			Params:    paramsGetName,
+			Once:      false,
+			EventCode: 1,
 		},
 	}
 
@@ -179,15 +201,15 @@ func AddDevicetoTaskList(serial string) {
 	l.mu.Unlock()
 }
 
-func createSetParamTask(mapTask []any) []taskmodel.SetParamTask {
+func createSetParamTask(mapTask []any) []taskmodel.SetParamValTask {
 
-	var settask []taskmodel.SetParamTask
-	settask = make([]taskmodel.SetParamTask, 0)
+	var settask []taskmodel.SetParamValTask
+	settask = make([]taskmodel.SetParamValTask, 0)
 
 	for _, v := range mapTask {
 
 		if iter_map, ok := v.(map[string]any); ok {
-			curr_task := taskmodel.SetParamTask{}
+			curr_task := taskmodel.SetParamValTask{}
 			for k, v := range iter_map {
 
 				switch k {
@@ -238,7 +260,7 @@ func parseTask(task map[string]any) (*Task, error) {
 				return &Task{
 					ID:     utils.Gen_uuid(),
 					Action: GetParameterValues,
-					Params: taskmodel.GetParamTask{
+					Params: taskmodel.GetParamValTask{
 						Name: mapTask["Name"].([]string),
 					},
 					Once:      true,
@@ -262,13 +284,13 @@ func parseTask(task map[string]any) (*Task, error) {
 	return nil, errors.New("Task is invalid")
 }
 func ParseScriptToTask(getScript map[string]any) (string, error) {
-	script := p.GetXMLValue(getScript, "Script")
+	script := p.GetXML(getScript, "Script")
 
 	if script == nil {
 		return "", errors.New("script is empty")
 	}
 
-	serial, ok := p.GetXMLValue(script, "Serial").(string)
+	serial, ok := p.GetXML(script, "Serial").(string)
 	if !ok || serial == "" {
 		return "", errors.New("serial is empty")
 	}

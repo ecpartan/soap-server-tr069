@@ -28,6 +28,17 @@ type HeaderInfo struct {
 	} `xml:"SOAP-ENV:Header"`
 }
 
+type Header2Info struct {
+	Header struct {
+		Text string `xml:",chardata"`
+		ID   struct {
+			Text           string `xml:",chardata"`
+			MustUnderstand string `xml:"SOAP-ENV:mustUnderstand,attr"`
+		} `xml:"cwmp:ID"`
+		NoMoreRequests string `xml:"cwmp:NoMoreRequests"`
+	} `xml:"SOAP-ENV:Header"`
+}
+
 type InformResponse struct {
 	EnvInfo
 	HeaderInfo `xml:"Header"`
@@ -102,6 +113,42 @@ type DeleteBody struct {
 	} `xml:"SOAP-ENV:Body"`
 }
 
+type GetRPCMethodsBody struct {
+	Body struct {
+		Text          string `xml:",chardata"`
+		GetRPCMethods struct {
+			Text string `xml:",chardata"`
+			Cwmp string `xml:"cwmp,attr"`
+		} `xml:"cwmp:GetRPCMethods"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
+type GetParameterNamesBody struct {
+	Body struct {
+		Text              string `xml:",chardata"`
+		GetParameterNames struct {
+			Text          string `xml:",chardata"`
+			Cwmp          string `xml:"cwmp,attr"`
+			ParameterPath string `xml:"ParameterPath"`
+			NextLevel     string `xml:"NextLevel"`
+		} `xml:"cwmp:GetParameterNames"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
+type GetParameterAttrBody struct {
+	Body struct {
+		Text                   string `xml:",chardata"`
+		GetParameterAttributes struct {
+			Text           string `xml:",chardata"`
+			ParameterNames struct {
+				Text      string   `xml:",chardata"`
+				ArrayType string   `xml:"SOAP-ENC:arrayType,attr"`
+				String    []string `xml:"string"`
+			} `xml:"ParameterNames"`
+		} `xml:"cwmp:GetParameterAttributes"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
 type SetParameterValues struct {
 	EnvInfo
 	HeaderInfo
@@ -124,4 +171,22 @@ type DeleteObject struct {
 	EnvInfo
 	HeaderInfo
 	DeleteBody
+}
+
+type GetRPCMethods struct {
+	EnvInfo
+	Header2Info
+	GetRPCMethodsBody
+}
+
+type GetParameterNames struct {
+	EnvInfo
+	Header2Info
+	GetParameterNamesBody
+}
+
+type GetParameterAttributes struct {
+	EnvInfo
+	Header2Info
+	GetParameterAttrBody
 }

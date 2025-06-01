@@ -1,0 +1,60 @@
+package config
+
+import (
+	"flag"
+	"log"
+	"os"
+	"sync"
+
+	"github.com/ilyakaznacheev/cleanenv"
+)
+
+type Config struct {
+	Server struct {
+		Host         string `yaml:"host" json:"host" env:"SERVER_HOST"`
+		Port         int    `yaml:"port" json:"port" env:"SERVER_PORT"`
+		ReadTimeout  int    `yaml:"read_timeout" json:"read_timeout" env:"SERVER_READ_TIMEOUT"`
+		WriteTimeout int    `yaml:"write_timeout" json:"write_timeout" env:"SERVER_WRITE_TIMEOUT"`
+		IdleTimeout  int    `yaml:"idle_timeout" json:"idle_timeout" env:"SERVER_IDLE_TIMEOUT"`
+		CORS         struct {
+			AllowedOrigins   []string `yaml:"allowed_origins" json:"allowed_origins" env:"SERVER_CORS_ALLOWED_ORIGINS"`
+			AllowedMethods   []string `yaml:"allowed_methods" json:"allowed_methods" env:"SERVER_CORS_ALLOWED_METHODS"`
+			AllowedHeaders   []string `yaml:"allowed_headers" json:"allowed_headers" env:"SERVER_CORS_ALLOWED_HEADERS"`
+			ExposedHeaders   []string `yaml:"exposed_headers" json:"exposed_headers" env:"SERVER_CORS_EXPOSED_HEADERS"`
+			AllowCredentials bool     `yaml:"allow_credentials" json:"allow_credentials" env:"SERVER_CORS_ALLOW_CREDENTIALS"`
+			MaxAge           int      `yaml:"max_age" json:"max_age" env:"SERVER_CORS_MAX_AGE"`
+		} `yaml:"cors" json:"cors" env:"SERVER_CORS"`
+	} `yaml:"server" json:"server" env:"SERVER"`
+	Database struct {
+		Host     string `yaml:"host" json:"host" env:"DATABASE_HOST"`
+		Port     int    `yaml:"port" json:"port" env:"DATABASE_PORT"`
+		UserName string `yaml:"username" json:"username" env:"DATABASE_USERNAME"`
+		Password string `yaml:"password" json:"password" env:"DATABASE_PASSWORD"`
+		Database string `yaml:"database" json:"database" env:"DATABASE_DATABASE"`
+	} `yaml:"database" json:"database" env:"DATABASE"`
+}
+
+var instance *Config
+var once sync.Once
+var path string
+
+func GetConfig() *Config {
+	once.Do(func() {
+		flag.StringVar(&path, "config", "config.yaml", "Path to config file")
+		flag.Parse()
+
+		if path == "" {
+			path = os.Getenv("CONFIG_PATH")
+		}
+
+		instance = &Config{}
+
+		if err := cleanenv.ReadConfig(path, instance); err != nil {
+			helptext := "Config file not found. Please create config.yaml file or set CONFIG"
+			help, _ := cleanenv.GetDescription(instance, &helptext)
+			log.Println(help)
+			log.Fatal(err)
+		}
+	})
+	return instance
+}

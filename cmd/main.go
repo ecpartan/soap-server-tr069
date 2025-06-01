@@ -1,31 +1,33 @@
 package main
 
 import (
-	"net/http"
+	"context"
 	"os"
 
+	"github.com/ecpartan/soap-server-tr069/internal/config"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/server"
 	"github.com/ecpartan/soap-server-tr069/tasks"
 )
 
 // RunServer run the server
-func RunServer() {
-	soapServer := server.NewServer()
 
-	soapServer.RegisterHandler("/addtask", soapServer.PerformConReq)
-	soapServer.RegisterHandler("/", soapServer.MainHandler)
-
-	err := http.ListenAndServe(":8089", soapServer)
-
-	logger.LogDebug("exiting with error", err)
-}
 func main() {
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	//logger.L(ctx).Info("Start logger")
+	cfg := config.GetConfig()
 	logger.InitLogger(os.Stdout)
-	logger.LogDebug("Starting server")
-
 	tasks.InitTasks()
-	RunServer()
+
+	s, err := server.NewServer(ctx, cfg)
+
+	if err != nil {
+		logger.LogDebug("error creating server", err)
+		return
+	}
+	s.Register()
+
+	err = s.Run(ctx)
 
 }
