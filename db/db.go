@@ -72,3 +72,12 @@ func (s *Service) GetUsers() ([]User, error) {
 
 	return ret, err
 }
+
+func (s *Service) GetUser(username string) (User, error) {
+	ret := User{}
+	err := s.db.Get(&ret, "SELECT id, username,password FROM user WHERE username = ?", username)
+	if err != nil {
+		return User{}, err
+	}
+	return ret, err
+}

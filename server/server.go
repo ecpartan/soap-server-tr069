@@ -11,6 +11,7 @@ import (
 	dbb "github.com/ecpartan/soap-server-tr069/db"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers/devsoap"
+	"github.com/ecpartan/soap-server-tr069/users/login"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 	"golang.org/x/sync/errgroup"
@@ -44,6 +45,9 @@ func (s *Server) Register() {
 
 	userHandler := devsoap.NewHandlerGetUsers(s.db)
 	userHandler.Register(s.router)
+
+	loginHandler := login.NewHandlerLogin(s.db)
+	loginHandler.Register(s.router)
 }
 
 // NewServer construct a new SOAP server

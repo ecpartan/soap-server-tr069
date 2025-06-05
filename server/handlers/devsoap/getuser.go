@@ -9,11 +9,21 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
+	"github.com/ecpartan/soap-server-tr069/users/login"
 	"github.com/julienschmidt/httprouter"
 )
 
 type handlerGetUsers struct {
 	db *db.Service
+}
+
+type Middleware struct {
+	next http.Handler
+}
+
+func (m Middleware) Wrap(handler http.Handler) http.Handler {
+	m.next = handler
+	return m.next
 }
 
 func NewHandlerGetUsers(db *db.Service) handlers.Handler {
@@ -22,7 +32,8 @@ func NewHandlerGetUsers(db *db.Service) handlers.Handler {
 	}
 }
 func (h *handlerGetUsers) Register(router *httprouter.Router) {
-	router.HandlerFunc(http.MethodGet, "/GetUsers", apperror.Middleware(h.GetUsers))
+	router.HandlerFunc(http.MethodGet, "/GetUsers", apperror.Middleware(login.AuthMiddleware(h.GetUsers)))
+
 }
 func (h *handlerGetUsers) GetUsers(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter GetUsers")
