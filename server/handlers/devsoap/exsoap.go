@@ -35,7 +35,6 @@ func (h *handler) Register(router *httprouter.Router) {
 
 func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType {
 	logger.LogDebug("ParseXML", mv)
-
 	if mv == nil {
 		return soap.ResponseUndefinded
 	}

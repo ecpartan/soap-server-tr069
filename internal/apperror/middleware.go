@@ -3,8 +3,6 @@ package apperror
 import (
 	"errors"
 	"net/http"
-
-	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
 type appHandler func(http.ResponseWriter, *http.Request) error
@@ -14,7 +12,7 @@ func Middleware(h appHandler) http.HandlerFunc {
 
 		var appErr *AppError
 		err := h(w, r)
-		logger.LogDebug("err", err)
+
 		if err != nil {
 			if errors.As(err, &appErr) {
 				if errors.Is(err, ErrNotFound) {
@@ -31,7 +29,7 @@ func Middleware(h appHandler) http.HandlerFunc {
 				w.Write(err.Marshal())
 				return
 			}
-			w.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write(systemError(err.Error()).Marshal())
 		}
 	}

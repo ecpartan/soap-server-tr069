@@ -45,5 +45,5 @@ func NewAppError(message, devMessage, code string) *AppError {
 	}
 }
 func systemError(developerMessage string) *AppError {
-	return NewAppError("system error", "TS-000001", developerMessage)
+	return NewAppError("system error", "400", developerMessage)
 }

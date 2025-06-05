@@ -48,7 +48,7 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 	logger.LogDebug("body_task", getScript)
 
 	var serial string
-	serial, err = tasks.ParseScriptToTask(getScript)
+	serial, err = tasks.AddToScripter(getScript)
 	if err != nil || serial == "" {
 		return fmt.Errorf("failed SN in CR: %v", err)
 	}
@@ -61,6 +61,7 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 	}
 	logger.LogDebug("mp", mp)
 	url := p.GetXML(mp, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL.Value")
+
 	if crURL, ok := url.(string); ok {
 		logger.LogDebug("crURL", crURL)
 		dr := dac.NewRequest("", "", "GET", crURL, "")

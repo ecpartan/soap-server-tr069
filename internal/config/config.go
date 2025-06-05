@@ -31,7 +31,18 @@ type Config struct {
 		UserName string `yaml:"username" json:"username" env:"DATABASE_USERNAME"`
 		Password string `yaml:"password" json:"password" env:"DATABASE_PASSWORD"`
 		Database string `yaml:"database" json:"database" env:"DATABASE_DATABASE"`
+		Driver   string `yaml:"driver" json:"driver" env:"DATABASE_DRIVER"`
 	} `yaml:"database" json:"database" env:"DATABASE"`
+	Redis struct {
+		Host           string `yaml:"host" json:"host" env:"REDIS_HOST"`
+		Port           int    `yaml:"port" json:"port" env:"REDIS_PORT"`
+		Password       string `yaml:"password" json:"password" env:"REDIS_PASSWORD"`
+		DB             int    `yaml:"database" json:"database" env:"REDIS_DATABASE"`
+		PoolSize       int    `yaml:"pool_size" json:"pool_size" env:"REDIS_POOL_SIZE"`
+		MinIdleConns   int    `yaml:"min_idle_conns" json:"min_idle_conns" env:"REDIS_MIN_IDLE_CONNS"`
+		MaxIdleConns   int    `yaml:"max_idle_conns" json:"max_idle_conns" env:"REDIS_MAX_IDLE_CONNS"`
+		MaxActiveConns int64  `yaml:"max_active_conns" json:"max_active_conns" env:"REDIS_MAX_ACTIVE_CONNS"`
+	} `yaml:"redis" json:"redis" env:"REDIS"`
 }
 
 var instance *Config

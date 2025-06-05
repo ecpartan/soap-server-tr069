@@ -234,22 +234,24 @@ const (
 func UpdateCacheBySerial(serial string, paramlist []any, l *repository.Cache, xmltype ParseXMLType) {
 
 	device_cache := l.Get(serial)
+
 	if device_cache == nil {
 		device_cache = make(map[string]any)
 	}
-	if device_cache, ok := device_cache.(map[string]any); ok {
-		logger.LogDebug("device_cache", device_cache)
-		var new_device_cache map[string]any
-		switch xmltype {
-		case ATTRS:
-			new_device_cache = updateDeviceAttrs(paramlist, device_cache)
-		case NAMES:
-			new_device_cache = updateDeviceNames(paramlist, device_cache)
-		case VALUES:
-			new_device_cache = updateDeviceValues(paramlist, device_cache)
-		}
-		l.Set(serial, new_device_cache)
+
+	var new_device_cache map[string]any
+
+	switch xmltype {
+	case ATTRS:
+		new_device_cache = updateDeviceAttrs(paramlist, device_cache)
+	case NAMES:
+		new_device_cache = updateDeviceNames(paramlist, device_cache)
+	case VALUES:
+		new_device_cache = updateDeviceValues(paramlist, device_cache)
 	}
+
+	l.Set(serial, new_device_cache)
+
 }
 
 func ParseGetResponse(xml_body any, serial string, respchan chan any, l *repository.Cache) {

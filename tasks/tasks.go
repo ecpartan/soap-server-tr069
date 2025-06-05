@@ -230,7 +230,7 @@ func createSetParamTask(mapTask []any) []taskmodel.SetParamValTask {
 	return settask
 }
 
-func parseTask(task map[string]any) (*Task, error) {
+func parseTask(task map[string]any) *Task {
 	fmt.Println(task)
 	for k, v := range task {
 		fmt.Println(reflect.TypeOf(v))
@@ -245,7 +245,7 @@ func parseTask(task map[string]any) (*Task, error) {
 					},
 					Once:      true,
 					EventCode: 6,
-				}, nil
+				}
 			case "DeleteObject":
 				return &Task{
 					ID:     utils.Gen_uuid(),
@@ -255,7 +255,7 @@ func parseTask(task map[string]any) (*Task, error) {
 					},
 					Once:      true,
 					EventCode: 6,
-				}, nil
+				}
 			case "GetParameterValues":
 				return &Task{
 					ID:     utils.Gen_uuid(),
@@ -265,7 +265,29 @@ func parseTask(task map[string]any) (*Task, error) {
 					},
 					Once:      true,
 					EventCode: 6,
-				}, nil
+				}
+
+			case "GetParameterNames":
+				return &Task{
+					ID:     utils.Gen_uuid(),
+					Action: GetParameterNames,
+					Params: taskmodel.GetParamNamesTask{
+						ParameterPath: mapTask["Name"].(string),
+						NextLevel:     mapTask["NextLevel"].(int),
+					},
+					Once:      true,
+					EventCode: 6,
+				}
+			case "GetParameterAttributes":
+				return &Task{
+					ID:     utils.Gen_uuid(),
+					Action: GetParameterAttributes,
+					Params: taskmodel.GetParamAttrTask{
+						Name: mapTask["Name"].([]string),
+					},
+					Once:      true,
+					EventCode: 6,
+				}
 			}
 		} else if arrayTask, ok := v.([]any); ok {
 			if k == "SetParameterValues" {
@@ -275,15 +297,15 @@ func parseTask(task map[string]any) (*Task, error) {
 					Params:    createSetParamTask(arrayTask),
 					Once:      true,
 					EventCode: 6,
-				}, nil
+				}
 			}
 		}
 
 	}
 
-	return nil, errors.New("Task is invalid")
+	return nil
 }
-func ParseScriptToTask(getScript map[string]any) (string, error) {
+func AddToScripter(getScript map[string]any) (string, error) {
 	script := p.GetXML(getScript, "Script")
 
 	if script == nil {
@@ -305,10 +327,10 @@ func ParseScriptToTask(getScript map[string]any) (string, error) {
 		for _, k := range keys {
 			if curr_task, ok := scriptList[k]; ok {
 				if addtask, ok := curr_task.(map[string]any); ok {
-					find_task, err := parseTask(addtask)
+					find_task := parseTask(addtask)
 
-					if err != nil {
-						return "", err
+					if find_task == nil {
+						return "", errors.New("failed task")
 					}
 					scripterTasks[serial] = append(scripterTasks[serial], *find_task)
 				}

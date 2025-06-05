@@ -1,4 +1,4 @@
-package postgres
+package mysql
 
 import (
 	"fmt"
@@ -8,11 +8,20 @@ import (
 
 func GetURLDB(cfg *config.Config) string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s",
+		"mysql://%s:%s@tcp(%s:%d)/%s",
 		cfg.Database.UserName,
 		cfg.Database.Password,
 		cfg.Database.Host,
 		cfg.Database.Port,
+		cfg.Database.Database,
+	)
+}
+
+func GetlocalURLDB(cfg *config.Config) string {
+	return fmt.Sprintf(
+		"%s:%s@/%s",
+		cfg.Database.UserName,
+		cfg.Database.Password,
 		cfg.Database.Database,
 	)
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ecpartan/soap-server-tr069/db"
+	dbb "github.com/ecpartan/soap-server-tr069/db"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers/devsoap"
 	"github.com/julienschmidt/httprouter"
@@ -37,26 +38,32 @@ func (s *Server) Register() {
 
 	taskHandler := devsoap.NewHandlerCR(s.cache)
 	taskHandler.Register(s.router)
-	/*
-		treeHandler := devsoap.NewHandlerGetTree(s.cache)
-		treeHandler.Register(s.router)*/
+
+	treeHandler := devsoap.NewHandlerGetTree(s.cache)
+	treeHandler.Register(s.router)
+
+	userHandler := devsoap.NewHandlerGetUsers(s.db)
+	userHandler.Register(s.router)
 }
 
 // NewServer construct a new SOAP server
 func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
+	logger.LogDebug("Creating new server")
 	router := httprouter.New()
 
-	db, _ := db.New(ctx, cfg)
-	/*if err != nil {
+	d, err := dbb.New(ctx, cfg)
+	logger.LogDebug("Creating new server", err)
+
+	if err != nil {
 		return nil, err
-	}*/
+	}
 
 	return &Server{
 		mapResponse: devmap.NewDevMap(),
 		router:      router,
 		cfg:         cfg,
-		db:          db,
-		cache:       repository.NewCache(),
+		db:          d,
+		cache:       repository.NewCache(ctx, cfg),
 	}, nil
 }
 

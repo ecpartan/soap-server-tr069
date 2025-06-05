@@ -1,10 +1,10 @@
 package devsoap
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
@@ -18,24 +18,36 @@ type handlerGetTree struct {
 }
 
 func NewHandlerGetTree(Cache *repository.Cache) handlers.Handler {
-	return &handlerCR{
+	return &handlerGetTree{
 		Cache: Cache,
 	}
 }
-
 func (h *handlerGetTree) Register(router *httprouter.Router) {
-	router.HandlerFunc(http.MethodPost, "/GetTree", apperror.Middleware(h.GetTree))
+	router.HandlerFunc(http.MethodGet, "/GetTree/:sn", apperror.Middleware(h.GetTree))
 }
 func (h *handlerGetTree) GetTree(w http.ResponseWriter, r *http.Request) error {
+	logger.LogDebug("Enter GetTree")
 	soapRequestBytes, _ := io.ReadAll(r.Body)
 	logger.LogDebug("soapRequestBytes", string(soapRequestBytes))
+	sn := httprouter.ParamsFromContext(r.Context()).ByName("sn")
 
-	dat, _ := os.ReadFile("notify.xml")
+	if sn == "" {
+		return fmt.Errorf("not found sn")
+	}
 
+	tree := h.Cache.Get(sn)
+	if tree == nil {
+		return fmt.Errorf("not found tree")
+	}
+	dat, err := json.Marshal(tree)
+	if err != nil {
+		return fmt.Errorf("not found tree")
+	}
 	w.Header().Set("Content-Length", fmt.Sprint(len(dat)))
-	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", r.RemoteAddr)
 
 	w.Write(dat)
+
 	return nil
 }

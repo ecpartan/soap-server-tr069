@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/clbanning/mxj/v2"
-	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
 func ConvertXMLtoMap(in []byte) (map[string]any, error) {
@@ -14,11 +13,9 @@ func ConvertXMLtoMap(in []byte) (map[string]any, error) {
 		return nil, err
 	}
 	return mv, nil
-
 }
-func GetXML(xmlMap any, key string) any {
-	logger.LogDebug("Enter")
 
+func GetXML(xmlMap any, key string) any {
 	strs := strings.Split(key, ".")
 
 	if len(strs) == 0 {
@@ -37,8 +34,6 @@ func GetXML(xmlMap any, key string) any {
 }
 
 func getXML(xmlMap any, key string) any {
-	logger.LogDebug("GetXML", key, xmlMap)
-
 	if mp, ok := xmlMap.(map[string]any); ok {
 		if value, ok := mp[key]; ok {
 			return value
