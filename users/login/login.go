@@ -17,7 +17,7 @@ type handlerLogin struct {
 	db *db.Service
 }
 
-func NewHandlerLogin(db *db.Service) handlers.Handler {
+func NewHandler(db *db.Service) handlers.Handler {
 	return &handlerLogin{
 		db: db,
 	}
@@ -35,6 +35,12 @@ type loginResponse struct {
 func (h *handlerLogin) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, "/Login", apperror.Middleware(h.Login))
 }
+
+// Login
+// @Summary Login and authenticate user
+// @Tags login
+// @Success 200 {object} loginResponse
+// @Router  /login [post]
 func (h *handlerLogin) Login(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter Login")
 	auth, err := io.ReadAll(r.Body)
@@ -62,7 +68,7 @@ func (h *handlerLogin) Login(w http.ResponseWriter, r *http.Request) error {
 
 	jwtsecret := getJWTsecret()
 
-	t, err := generateJWT(1, jwtsecret)
+	t, err := generateJWT(users.ID, jwtsecret)
 	if err != nil {
 		return fmt.Errorf("could not generate JWT: %v", err)
 	}

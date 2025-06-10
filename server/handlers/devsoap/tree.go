@@ -25,6 +25,12 @@ func NewHandlerGetTree(Cache *repository.Cache) handlers.Handler {
 func (h *handlerGetTree) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, "/GetTree/:sn", apperror.Middleware(h.GetTree))
 }
+
+// Get Tree by serial number
+// @Summary Get Tree
+// @Tags Frontend
+// @Success 200
+// @Router /GetTree/:sn [get]
 func (h *handlerGetTree) GetTree(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter GetTree")
 	soapRequestBytes, _ := io.ReadAll(r.Body)

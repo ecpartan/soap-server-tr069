@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/ecpartan/soap-server-tr069/db"
-	dbb "github.com/ecpartan/soap-server-tr069/db"
+	_ "github.com/ecpartan/soap-server-tr069/docs"
+	"github.com/ecpartan/soap-server-tr069/pkg/metrics"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers/devsoap"
 	"github.com/ecpartan/soap-server-tr069/users/login"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
+	swag "github.com/swaggo/http-swagger"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ecpartan/soap-server-tr069/internal/config"
@@ -46,7 +48,7 @@ func (s *Server) Register() {
 	userHandler := devsoap.NewHandlerGetUsers(s.db)
 	userHandler.Register(s.router)
 
-	loginHandler := login.NewHandlerLogin(s.db)
+	loginHandler := login.NewHandler(s.db)
 	loginHandler.Register(s.router)
 }
 
@@ -55,7 +57,13 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	logger.LogDebug("Creating new server")
 	router := httprouter.New()
 
-	d, err := dbb.New(ctx, cfg)
+	logger.LogDebug("swagger docs initializing")
+	router.Handler(http.MethodGet, "/swagger", http.RedirectHandler("/swagger/index.html", http.StatusMovedPermanently))
+	router.Handler(http.MethodGet, "/swagger/*any", swag.WrapHandler)
+	metHandler := metrics.Handler{}
+	metHandler.Register(router)
+
+	d, err := db.New(ctx, cfg)
 	logger.LogDebug("Creating new server", err)
 
 	if err != nil {

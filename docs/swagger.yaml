@@ -1,0 +1,104 @@
+definitions:
+  login.loginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  tasks.Task:
+    properties:
+      action:
+        $ref: '#/definitions/tasks.TaskRequestType'
+      eventCode:
+        type: integer
+      id:
+        type: string
+      once:
+        type: boolean
+      params: {}
+    type: object
+  tasks.TaskRequestType:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    type: integer
+    x-enum-varnames:
+    - NoTask
+    - GetParameterValues
+    - SetParameterValues
+    - AddObject
+    - DeleteObject
+    - GetParameterNames
+    - SetParameterAttributes
+    - GetParameterAttributes
+    - GetRPCMethods
+    - Download
+    - Upload
+    - FactoryReset
+    - Reboot
+info:
+  contact: {}
+paths:
+  /:
+    post:
+      responses:
+        "200":
+          description: OK
+      summary: Perform a SOAP request
+      tags:
+      - soap
+  /GetTree/:sn:
+    get:
+      responses:
+        "200":
+          description: OK
+      summary: Get Tree
+      tags:
+      - Frontend
+  /GetUsers:
+    get:
+      responses:
+        "200":
+          description: OK
+      summary: Get Users
+      tags:
+      - Frontend
+  /addtask:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tasks.Task'
+      summary: Perfform a CR
+      tags:
+      - SOAP
+  /heartbeat:
+    get:
+      responses:
+        "204":
+          description: No Content
+      summary: Heartbeat metrics
+      tags:
+      - metrics
+  /login:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/login.loginResponse'
+      summary: Login and authenticate user
+      tags:
+      - login
+swagger: "2.0"

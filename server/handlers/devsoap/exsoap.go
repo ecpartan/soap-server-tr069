@@ -119,6 +119,12 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 		return status
 	}
 }
+
+// Soap main handler
+// @Summary Perform a SOAP request
+// @Tags soap
+// @Success 200
+// @Router / [post]
 func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 	soapRequestBytes, err := io.ReadAll(r.Body)
 

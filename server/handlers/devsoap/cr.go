@@ -30,6 +30,11 @@ func (h *handlerCR) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, "/addtask", apperror.Middleware(h.PerformConReq))
 }
 
+// Connect to the server
+// @Summary Perfform a CR
+// @Tags SOAP
+// @Success 200 {object} tasks.Task
+// @Router  /addtask [post]
 func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error {
 
 	logger.LogDebug("addtask")

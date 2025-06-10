@@ -35,6 +35,12 @@ func (h *handlerGetUsers) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, "/GetUsers", apperror.Middleware(login.AuthMiddleware(h.GetUsers)))
 
 }
+
+// Get Users info
+// @Summary Get Users
+// @Tags Frontend
+// @Success 200
+// @Router /GetUsers [get]
 func (h *handlerGetUsers) GetUsers(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter GetUsers")
 

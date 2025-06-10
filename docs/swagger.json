@@ -1,0 +1,153 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/": {
+            "post": {
+                "tags": [
+                    "soap"
+                ],
+                "summary": "Perform a SOAP request",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/GetTree/:sn": {
+            "get": {
+                "tags": [
+                    "Frontend"
+                ],
+                "summary": "Get Tree",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/GetUsers": {
+            "get": {
+                "tags": [
+                    "Frontend"
+                ],
+                "summary": "Get Users",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/addtask": {
+            "post": {
+                "tags": [
+                    "SOAP"
+                ],
+                "summary": "Perfform a CR",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/tasks.Task"
+                        }
+                    }
+                }
+            }
+        },
+        "/heartbeat": {
+            "get": {
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Heartbeat metrics",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "login"
+                ],
+                "summary": "Login and authenticate user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/login.loginResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "login.loginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "tasks.Task": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/definitions/tasks.TaskRequestType"
+                },
+                "eventCode": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "once": {
+                    "type": "boolean"
+                },
+                "params": {}
+            }
+        },
+        "tasks.TaskRequestType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+            ],
+            "x-enum-varnames": [
+                "NoTask",
+                "GetParameterValues",
+                "SetParameterValues",
+                "AddObject",
+                "DeleteObject",
+                "GetParameterNames",
+                "SetParameterAttributes",
+                "GetParameterAttributes",
+                "GetRPCMethods",
+                "Download",
+                "Upload",
+                "FactoryReset",
+                "Reboot"
+            ]
+        }
+    }
+}
