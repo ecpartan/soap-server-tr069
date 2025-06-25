@@ -15,7 +15,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/users/login"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
-	swag "github.com/swaggo/http-swagger"
+	swag "github.com/swaggo/http-swagger/v2"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ecpartan/soap-server-tr069/internal/config"
@@ -63,7 +63,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	metHandler := metrics.Handler{}
 	metHandler.Register(router)
 
-	d, err := db.New(ctx, cfg)
+	d, err := db.New(ctx, &cfg.DatabaseConf)
 	logger.LogDebug("Creating new server", err)
 
 	if err != nil {

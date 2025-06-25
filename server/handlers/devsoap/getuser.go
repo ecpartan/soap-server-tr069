@@ -48,6 +48,7 @@ func (h *handlerGetUsers) GetUsers(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return fmt.Errorf("not found tree")
 	}
+	logger.LogDebug("users", users)
 	dat, err := json.Marshal(users)
 	if err != nil {
 		return fmt.Errorf("not found tree")

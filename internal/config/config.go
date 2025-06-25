@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	dbconf "github.com/ecpartan/soap-server-tr069/db/config"
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -25,15 +26,8 @@ type Config struct {
 			MaxAge           int      `yaml:"max_age" json:"max_age" env:"SERVER_CORS_MAX_AGE"`
 		} `yaml:"cors" json:"cors" env:"SERVER_CORS"`
 	} `yaml:"server" json:"server" env:"SERVER"`
-	Database struct {
-		Host     string `yaml:"host" json:"host" env:"DATABASE_HOST"`
-		Port     int    `yaml:"port" json:"port" env:"DATABASE_PORT"`
-		UserName string `yaml:"username" json:"username" env:"DATABASE_USERNAME"`
-		Password string `yaml:"password" json:"password" env:"DATABASE_PASSWORD"`
-		Database string `yaml:"database" json:"database" env:"DATABASE_DATABASE"`
-		Driver   string `yaml:"driver" json:"driver" env:"DATABASE_DRIVER"`
-	} `yaml:"database" json:"database" env:"DATABASE"`
-	Redis struct {
+	dbconf.DatabaseConf `yaml:"database" json:"database" env:"DATABASE"`
+	Redis               struct {
 		Host           string `yaml:"host" json:"host" env:"REDIS_HOST"`
 		Port           int    `yaml:"port" json:"port" env:"REDIS_PORT"`
 		Password       string `yaml:"password" json:"password" env:"REDIS_PASSWORD"`
@@ -51,7 +45,7 @@ var path string
 
 func GetConfig() *Config {
 	once.Do(func() {
-		flag.StringVar(&path, "config", "config.yaml", "Path to config file")
+		flag.StringVar(&path, "config", "configs/configpgx.yaml", "Path to config file")
 		flag.Parse()
 
 		if path == "" {

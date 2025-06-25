@@ -1,4 +1,4 @@
-package db
+package dao
 
 type User struct {
 	ID       int    `json:"id"`

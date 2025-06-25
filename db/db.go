@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	dbconf "github.com/ecpartan/soap-server-tr069/db/config"
+	"github.com/ecpartan/soap-server-tr069/db/dao"
 	"github.com/ecpartan/soap-server-tr069/db/mysql"
 	"github.com/ecpartan/soap-server-tr069/db/postgres"
-	"github.com/ecpartan/soap-server-tr069/internal/config"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -15,7 +16,7 @@ import (
 
 type Service struct {
 	ctx context.Context
-	cfg *config.Config
+	cfg *dbconf.DatabaseConf
 	db  *DB
 }
 
@@ -23,7 +24,7 @@ type DB struct {
 	*sqlx.DB
 }
 
-func New(ctx context.Context, cfg *config.Config) (*Service, error) {
+func New(ctx context.Context, cfg *dbconf.DatabaseConf) (*Service, error) {
 	logger.LogDebug("New", "New DB")
 	db, err := NewDB(ctx, cfg)
 	if err != nil {
@@ -36,15 +37,15 @@ func New(ctx context.Context, cfg *config.Config) (*Service, error) {
 	}, nil
 }
 
-func NewDB(ctx context.Context, cfg *config.Config) (*DB, error) {
+func NewDB(ctx context.Context, cfg *dbconf.DatabaseConf) (*DB, error) {
 	logger.LogDebug("NewDB", "New DB")
-	switch cfg.Database.Driver {
+	switch cfg.Driver {
 	case "pgx":
-		db, err := sqlx.Connect("pgx", postgres.GetURLDB(cfg))
-		if err != nil {
+		if db, err := postgres.NewClient(ctx, cfg); err != nil {
 			return nil, err
+		} else {
+			return &DB{db}, nil
 		}
-		return &DB{db}, nil
 	case "mysql":
 		db, err := sqlx.Connect("mysql", mysql.GetURLDB(cfg))
 		if err != nil {
@@ -60,10 +61,11 @@ func NewDB(ctx context.Context, cfg *config.Config) (*DB, error) {
 	}
 	return nil, fmt.Errorf("database driver not found")
 }
-func (s *Service) GetUsers() ([]User, error) {
-	ret := make([]User, 0)
-	err := s.db.Select(&ret, "SELECT username,password FROM user")
 
+func (s *Service) GetUsers() ([]dao.User, error) {
+	ret := make([]dao.User, 0)
+	err := s.db.Select(&ret, "SELECT id, username,password FROM user")
+	logger.LogDebug("GetUsers", ret, err)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +75,11 @@ func (s *Service) GetUsers() ([]User, error) {
 	return ret, err
 }
 
-func (s *Service) GetUser(username string) (User, error) {
-	ret := User{}
-	err := s.db.Get(&ret, "SELECT id, username,password FROM user WHERE username = ?", username)
+func (s *Service) GetUser(username string) (dao.User, error) {
+	ret := dao.User{}
+	err := s.db.Get(&ret, "SELECT id, user,password FROM user WHERE username = ?", username)
 	if err != nil {
-		return User{}, err
+		return dao.User{}, err
 	}
 	return ret, err
 }

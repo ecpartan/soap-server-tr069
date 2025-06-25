@@ -3,16 +3,26 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/ecpartan/soap-server-tr069/internal/config"
+	"github.com/ecpartan/soap-server-tr069/db/config"
 )
 
-func GetURLDB(cfg *config.Config) string {
+func GetURLDB(cfg *config.DatabaseConf) string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s",
-		cfg.Database.UserName,
-		cfg.Database.Password,
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.Database,
+		"postgresql://%s:%s@%s:%d/%s",
+		cfg.UserName,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Database,
+	)
+}
+
+func GetURLPg(cfg *config.DatabaseConf) string {
+	return fmt.Sprintf(
+		"postgresql://%s:%s@%s:%d",
+		cfg.UserName,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
 	)
 }
