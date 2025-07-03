@@ -35,6 +35,9 @@ func NewCache(ctx context.Context, cfg *config.Config) *Cache {
 	return c
 }
 
+func GetCache() *Cache {
+	return c
+}
 func (c *Cache) Get(key string) map[string]any {
 	c.RLock()
 	defer c.RUnlock()

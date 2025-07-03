@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ecpartan/soap-server-tr069/internal/devmap"
+	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
@@ -166,63 +168,6 @@ func updateDeviceNames(paramlist []any, mp map[string]any) map[string]any {
 	return mp
 }
 
-type RespCValue struct {
-	Value string
-	Type  string
-	Code  string
-	Num   string
-}
-
-func ParseAddResponse(xml_body any, respchan chan any) {
-
-	logger.LogDebug("ParseAddResponse")
-	logger.LogDebug("body,", xml_body)
-
-	if status, ok := p.GetXML(xml_body, "Status.#text").(string); ok {
-		if status == "1" || status == "0" {
-			logger.LogDebug("Return:", status)
-
-			if number, ok := p.GetXML(xml_body, "InstanceNumber.#text").(string); ok {
-				/*respchan <- RespCValue{
-					Value: number,
-					Code: status,
-				}*/
-				respchan <- number
-				//close(respchan)
-			}
-		}
-	}
-}
-
-func ParseDeleteResponse(xml_body any, respchan chan<- any) {
-
-	logger.LogDebug("ParseAddResponse")
-	logger.LogDebug("body,", xml_body)
-
-	if status, ok := p.GetXML(xml_body, "Status").(string); ok {
-		if status == "1" || status == "0" {
-			respchan <- status
-			//close(respchan)
-		}
-	}
-}
-
-func ParseSetResponse(xml_body any, respchan chan<- any) {
-
-	logger.LogDebug("ParseAddResponse")
-	logger.LogDebug("body,", xml_body)
-
-	if respchan == nil {
-		return
-	}
-	if status, ok := p.GetXML(xml_body, "Status").(string); ok {
-		if status == "1" || status == "0" {
-			respchan <- status
-			//close(respchan)
-		}
-	}
-}
-
 type ParseXMLType int
 
 const (
@@ -254,62 +199,123 @@ func UpdateCacheBySerial(serial string, paramlist []any, l *repository.Cache, xm
 
 }
 
-func ParseGetResponse(xml_body any, serial string, respchan chan any, l *repository.Cache) {
+func ParseFaultResponse(mp *devmap.DevID) {
+	logger.LogDebug("ParseFaultResponse")
+	logger.LogDebug("body,", mp.Body)
+
+	faultcode := p.GetXMLString(mp.Body, "faultcode")
+	faultstring := p.GetXMLString(mp.Body, "faultstring")
+
+	if faultcode != "" && faultstring != "" {
+		ret := devmodel.SoapResponse{Code: faultcode + " " + faultstring, Num: "404", Method: "Fault"}
+		mp.RespChan <- ret
+		return
+	}
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Fault"}
+}
+
+func ParseAddResponse(mp *devmap.DevID) {
+
+	logger.LogDebug("ParseAddResponse")
+	logger.LogDebug("body,", mp.Body)
+
+	if status := p.GetXMLString(mp.Body, "Status"); status == "1" || status == "0" {
+		logger.LogDebug("Return:", status)
+		if number := p.GetXMLString(mp.Body, "InstanceNumber"); number != "" {
+			ret := devmodel.SoapResponse{Code: status, Num: number, Method: "Add"}
+			mp.RespChan <- ret
+			return
+		}
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Add"}
+}
+
+func ParseDeleteResponse(mp *devmap.DevID) {
+
+	logger.LogDebug("ParseDeleteResponse")
+	logger.LogDebug("body,", mp.Body)
+
+	if status := p.GetXMLString(mp.Body, "Status"); status == "1" || status == "0" {
+		mp.RespChan <- devmodel.SoapResponse{Code: status, Method: "Delete"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Delete"}
+}
+
+func ParseSetResponse(mp *devmap.DevID) {
+
+	logger.LogDebug("ParseSetResponse")
+	logger.LogDebug("body,", mp.Body)
+
+	if mp.RespChan == nil {
+		return
+	}
+	if status := p.GetXMLString(mp.Body, "Status"); status == "1" || status == "0" {
+		mp.RespChan <- devmodel.SoapResponse{Code: status, Method: "Set"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Set"}
+}
+
+func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 
 	logger.LogDebug("ParseGetResponse")
-	logger.LogDebug("body,", xml_body)
+	logger.LogDebug("body,", mp.Body)
 
-	paramlist := p.GetXML(xml_body, "ParameterList.ParameterValueStruct").([]any)
+	paramlist := p.GetXML(mp.Body, "ParameterList.ParameterValueStruct").([]any)
 
-	if paramlist == nil || respchan == nil {
-		//close(respchan)
+	if paramlist == nil || mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Get"}
 		return
 	}
-	UpdateCacheBySerial(serial, paramlist, l, VALUES)
+	UpdateCacheBySerial(mp.Serial, paramlist, l, VALUES)
 
-	respchan <- struct{}{}
-	//close(respchan)
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Get"}
+
 }
 
-func ParseGetRPCMethodsResponse(xml_body any, respchan chan any) {
+func ParseGetRPCMethodsResponse(mp *devmap.DevID) {
 	logger.LogDebug("ParseGetRPCMethodsResponse")
-	logger.LogDebug("body,", xml_body)
-	if respchan == nil {
+	logger.LogDebug("body,", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "GetRPCMethods"}
 		return
 	}
 
-	respchan <- struct{}{}
-	//close(respchan)
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetRPCMethods"}
 }
 
-func ParseGetParameterNamesResponse(xml_body any, serial string, respchan chan any, l *repository.Cache) {
+func ParseGetParameterNamesResponse(mp *devmap.DevID, l *repository.Cache) {
 	logger.LogDebug("ParseGetParameterNamesResponse")
-	logger.LogDebug("body,", xml_body)
+	logger.LogDebug("body,", mp.Body)
 
-	if respchan == nil {
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "GetParameterNames"}
 		return
 	}
-	paramlist := p.GetXML(xml_body, "ParameterList.ParameterInfoStruct").([]any)
+	paramlist := p.GetXML(mp.Body, "ParameterList.ParameterInfoStruct").([]any)
 
-	UpdateCacheBySerial(serial, paramlist, l, NAMES)
+	UpdateCacheBySerial(mp.Serial, paramlist, l, NAMES)
 
-	respchan <- struct{}{}
-	//close(respchan)
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetParameterNames"}
 }
 
-func ParseGetParameterAttributesResponse(xml_body any, serial string, respchan chan any, l *repository.Cache) {
+func ParseGetParameterAttributesResponse(mp *devmap.DevID, l *repository.Cache) {
 	logger.LogDebug("ParseGetParameterAttributesResponse")
-	logger.LogDebug("body,", xml_body)
+	logger.LogDebug("body,", mp.Body)
 
-	if respchan == nil {
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "GetParameterAttributes"}
 		return
 	}
 
-	paramlist := p.GetXML(xml_body, "ParameterList.ParameterAttributeStruct").([]any)
+	paramlist := p.GetXML(mp.Body, "ParameterList.ParameterAttributeStruct").([]any)
 
-	respchan <- struct{}{}
+	UpdateCacheBySerial(mp.Serial, paramlist, l, ATTRS)
 
-	UpdateCacheBySerial(serial, paramlist, l, ATTRS)
-
-	//close(respchan)
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetParameterAttributes"}
 }

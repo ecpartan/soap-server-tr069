@@ -52,20 +52,25 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 
 	logger.LogDebug("body_task", getScript)
 
-	var serial string
-	serial, err = tasks.AddToScripter(getScript)
-	if err != nil || serial == "" {
+	sn := p.GetSnScript(getScript)
+	if sn == "" {
 		return fmt.Errorf("failed SN in CR: %v", err)
 	}
+	err = tasks.AddToScripter(sn, getScript)
 
-	mp := h.Cache.Get(serial)
+	if err != nil {
+		return fmt.Errorf("failed add task CR: %v", err)
+	}
 
-	if mp == nil {
+	tree := h.Cache.Get(sn)
+
+	if tree == nil {
 		logger.LogDebug("mp is nil")
 		return fmt.Errorf("failed no found SN in DB: %v", err)
 	}
-	logger.LogDebug("mp", mp)
-	url := p.GetXML(mp, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL.Value")
+
+	logger.LogDebug("mp", tree)
+	url := p.GetXML(tree, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL.Value")
 
 	if crURL, ok := url.(string); ok {
 		logger.LogDebug("crURL", crURL)

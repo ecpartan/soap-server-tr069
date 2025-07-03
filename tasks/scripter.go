@@ -14,22 +14,22 @@ import (
 	"github.com/ecpartan/soap-server-tr069/soaprpc"
 )
 
-func NextTask(serial, addr string, evcodes map[int]struct{}) Task {
+func NextTask(mp *devmodel.ResponseTask, addr string, evcodes map[int]struct{}) Task {
 
-	CheckNewConReqTasks(serial)
-	tasks := GetListTasksBySerial(serial, addr)
+	CheckNewConReqTasks(mp)
+	tasks := GetListTasksBySerial(mp.Serial, addr)
 
 	if len(tasks) == 0 {
 		return Task{Action: NoTask}
 	}
+	logger.LogDebug("NextTask", tasks)
 
 	for _, task := range tasks {
 		if _, ok := evcodes[task.EventCode]; !ok {
 			continue
 		}
-		logger.LogDebug("NextTask", task)
 		ret := task
-		DeleteTaskByID(serial, task.ID)
+		DeleteTaskByID(mp.Serial, task.ID)
 
 		return ret
 	}
@@ -52,7 +52,7 @@ func SubstringInstance(message string, start, end byte) (bool, int, int) {
 
 func PrepareListTask(task Task, rp *devmodel.ResponseTask) {
 
-	//logger.LogDebug("PrepareListTask", rp.RespList)
+	logger.LogDebug("PrepareListTask", rp.RespList)
 	logger.LogDebug("PrepareListTask", task)
 
 	if rp.ResplistIsEmpty() {
@@ -72,10 +72,9 @@ func PrepareListTask(task Task, rp *devmodel.ResponseTask) {
 					replacing_trim := str[start:end]
 					logger.LogDebug("replacing_trim", replacing_trim)
 					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil {
-						if replace_trim, ok := rp.RespList[i].(string); ok {
-							task_params[k].Name = str[:start] + replace_trim + str[end:]
-							logger.LogDebug("tasks", task_params)
-						}
+						replace_trim := rp.RespList[i].Num
+						task_params[k].Name = str[:start] + replace_trim + str[end:]
+						logger.LogDebug("tasks", task_params)
 					}
 				}
 			}
@@ -87,9 +86,8 @@ func PrepareListTask(task Task, rp *devmodel.ResponseTask) {
 			if ok, start, end := SubstringInstance(str, '#', '.'); ok {
 				replacing_trim := str[start:end]
 				if i, err := strconv.Atoi(replacing_trim[1:]); err == nil {
-					if replace_trim, ok := rp.RespList[i].(string); ok {
-						task_params.Name = str[:start] + replace_trim + str[end:]
-					}
+					replace_trim := rp.RespList[i].Num
+					task_params.Name = str[:start] + replace_trim + str[end:]
 				}
 			}
 		}
@@ -99,7 +97,7 @@ func PrepareListTask(task Task, rp *devmodel.ResponseTask) {
 
 func PrepareTasks(host string, mp *devmodel.ResponseTask, sp *soap.SoapSessionInfo) {
 
-	task := NextTask(mp.Serial, host, sp.EventCodes)
+	task := NextTask(mp, host, sp.EventCodes)
 
 	if task.Action == NoTask {
 		logger.LogDebug("task is nil")
@@ -111,10 +109,11 @@ func PrepareTasks(host string, mp *devmodel.ResponseTask, sp *soap.SoapSessionIn
 
 func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup) bool {
 	logger.LogDebug("GetTasks")
-	task := NextTask(mp.Serial, host, sp.EventCodes)
+	task := NextTask(mp, host, sp.EventCodes)
 
 	if task.Action == NoTask {
 		logger.LogDebug("task is nil")
+
 		w.WriteHeader(http.StatusNoContent)
 
 		return true
@@ -128,11 +127,16 @@ func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp 
 }
 
 func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo), task Task, rp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup, w http.ResponseWriter) {
+	logger.LogDebug("executeResponsetask1", rp.RespList)
+
 	wg.Add(1)
 
 	if rp.RespChan == nil {
-		rp.RespChan = make(chan any, 2)
+		rp.RespChan = make(chan devmodel.SoapResponse, 2)
+	} else {
+		logger.LogDebug("Channel is not empty")
 	}
+
 	go func() {
 		task_func(w, task.Params, sp)
 
@@ -142,16 +146,15 @@ func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap
 			logger.LogDebug("Failed response", ret)
 			return
 		} else {
+			logger.LogDebug("response", ret)
 			rp.InsertRespList(ret)
 		}
-		//logger.LogDebug("executeResponsetask", ret)
-		//logger.LogDebug("executeResponsetask", rp)
-
 	}()
 
-	wg.Wait()
-
+	logger.LogDebug("executeResponsetask2", rp.RespList)
 	logger.LogDebug("Wait", task)
+
+	wg.Wait()
 }
 
 func ExecuteTask(task Task, wg *sync.WaitGroup, rp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, w http.ResponseWriter) {

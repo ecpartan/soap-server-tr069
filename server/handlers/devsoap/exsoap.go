@@ -56,23 +56,25 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 			return soap.ResponseUndefinded
 		}
 		var status = soap.ResponseUndefinded
-		inf := p.GetXML(xml_body, "cwmp:Inform")
 
-		if inf != nil {
+		if ret, ok := p.GetXML(xml_body, "SOAP-ENV:Fault").(map[string]any); ok {
+			status = soap.FaultResponse
+			mp.Body = ret
+		} else if ret, ok := p.GetXML(xml_body, "cwmp:Inform").(map[string]any); ok {
 			logger.LogDebug("found Inform")
-			serial := p.GetXML(inf, "DeviceId.SerialNumber.#text").(string)
-			if serial == "" {
+			if sn := p.GetXMLString(ret, "DeviceId.SerialNumber"); sn != "" {
+				tasks.AddDevicetoTaskList(sn)
+
+				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
+				logger.LogDebug("paramlist", paramlist)
+				tasks.UpdateCacheBySerial(sn, paramlist, h.Cache, tasks.VALUES)
+
+				mp.Body = ret
+				mp.Serial = sn
+				status = soap.Inform
+			} else {
 				return soap.ResponseUndefinded
 			}
-			tasks.AddDevicetoTaskList(serial)
-
-			paramlist := p.GetXML(inf, "ParameterList.ParameterValueStruct").([]any)
-			logger.LogDebug("paramlist", paramlist)
-			tasks.UpdateCacheBySerial(serial, paramlist, h.Cache, tasks.VALUES)
-
-			mp.Body = inf.(map[string]any)
-			mp.Serial = serial
-			status = soap.Inform
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:GetParameterValuesResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.GetParameterValuesResponse
@@ -157,33 +159,31 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 	paramType := h.parseXML(addr, mv)
 
 	logger.LogDebug("mapresponse", h.mapResponse)
-
-	xml_body := mp.Body
-
-	logger.LogDebug("found soap type", paramType, xml_body)
+	logger.LogDebug("found soap type", paramType, mp.Body)
 
 	switch paramType {
 	case soap.ResponseUndefinded:
 		return fmt.Errorf("unknown XML Soap Type: %v", err)
+	case soap.FaultResponse:
+		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
-		//if !w.(*httpserver.ResponseWriter).OutputStarted {
 		soaprpc.TransInformResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo)
-		//}
 	case soap.GetParameterValuesResponse:
-		tasks.ParseGetResponse(mp.ResponseTask.Body, mp.Serial, mp.RespChan, h.Cache)
+		tasks.ParseGetResponse(mp, h.Cache)
 	case soap.SetParameterValuesResponse:
-		tasks.ParseSetResponse(xml_body, mp.RespChan)
+		tasks.ParseSetResponse(mp)
 	case soap.AddObjectResponse:
-		tasks.ParseAddResponse(mp.Body, mp.RespChan)
+		tasks.ParseAddResponse(mp)
 	case soap.DeleteObjectResponse:
-		tasks.ParseDeleteResponse(xml_body, mp.RespChan)
+		tasks.ParseDeleteResponse(mp)
 	case soap.GetRPCMethodsResponse:
-		tasks.ParseGetRPCMethodsResponse(mp.Body, mp.RespChan)
+		tasks.ParseGetRPCMethodsResponse(mp)
 	case soap.GetParameterNamesResponse:
-		tasks.ParseGetParameterNamesResponse(mp.ResponseTask.Body, mp.Serial, mp.RespChan, h.Cache)
+		tasks.ParseGetParameterNamesResponse(mp, h.Cache)
 	case soap.GetParameterAttributesResponse:
-		tasks.ParseGetParameterAttributesResponse(mp.ResponseTask.Body, mp.Serial, mp.RespChan, h.Cache)
+		tasks.ParseGetParameterAttributesResponse(mp, h.Cache)
 	default:
+
 		break
 	}
 	if paramType != soap.Inform {

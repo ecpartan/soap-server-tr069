@@ -13,8 +13,12 @@ type AppError struct {
 }
 
 var (
-	ErrNotFound     = NewAppError("Not Found", "Not Found", "404")
-	ErrAlreadyExist = NewAppError("Already Exist", "Already Exist", "409")
+	ErrNotFound       = NewAppError("Not Found", "Not Found", "404")
+	ErrAlreadyExist   = NewAppError("Already Exist", "Already Exist", "409")
+	ErrBadRequest     = NewAppError("Bad Request", "Bad Request", "400")
+	ErrInternal       = NewAppError("Internal Error", "Internal Error", "500")
+	ErrMethodNotFound = NewAppError("Method Not Found", "Method Not Found", "404")
+	ErrInvalidType    = NewAppError("Invalid Type", "Invalid Type", "400")
 )
 
 func (e *AppError) Error() string {

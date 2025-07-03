@@ -17,4 +17,5 @@ const (
 	DeleteObjectResponse
 	TransferCompleteResponse
 	ResponseUndefinded
+	FaultResponse
 )

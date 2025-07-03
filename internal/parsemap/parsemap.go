@@ -33,6 +33,16 @@ func GetXML(xmlMap any, key string) any {
 	return xmlMap
 }
 
+func GetXMLString(xmlMap any, key string) string {
+	if mp := GetXML(xmlMap, key); mp != nil {
+		if str, ok := GetXML(mp, "#text").(string); ok {
+			return str
+		}
+	}
+
+	return ""
+}
+
 func getXML(xmlMap any, key string) any {
 	if mp, ok := xmlMap.(map[string]any); ok {
 		if value, ok := mp[key]; ok {
@@ -45,4 +55,12 @@ func getXML(xmlMap any, key string) any {
 		}
 	}
 	return nil
+}
+
+func GetSnScript(getScript map[string]any) string {
+
+	if sn, ok := GetXML(getScript, "Serial").(string); ok {
+		return sn
+	}
+	return ""
 }

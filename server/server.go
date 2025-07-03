@@ -9,13 +9,16 @@ import (
 
 	"github.com/ecpartan/soap-server-tr069/db"
 	_ "github.com/ecpartan/soap-server-tr069/docs"
+	"github.com/ecpartan/soap-server-tr069/jrpc2"
+	"github.com/ecpartan/soap-server-tr069/jrpc2/middleware"
+
 	"github.com/ecpartan/soap-server-tr069/pkg/metrics"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers/devsoap"
 	"github.com/ecpartan/soap-server-tr069/users/login"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
-	swag "github.com/swaggo/http-swagger/v2"
+	swag "github.com/swaggo/http-swagger"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ecpartan/soap-server-tr069/internal/config"
@@ -31,6 +34,7 @@ type Server struct {
 	db          *db.Service
 	httpServer  *http.Server
 	cache       *repository.Cache
+	jrpc2Server *jrpc2.Jrpc2Server
 }
 
 func (s *Server) Register() {
@@ -50,6 +54,9 @@ func (s *Server) Register() {
 
 	loginHandler := login.NewHandler(s.db)
 	loginHandler.Register(s.router)
+
+	frontHandler := middleware.NewHandler(s.cache)
+	frontHandler.Register(s.router)
 }
 
 // NewServer construct a new SOAP server
@@ -60,6 +67,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	logger.LogDebug("swagger docs initializing")
 	router.Handler(http.MethodGet, "/swagger", http.RedirectHandler("/swagger/index.html", http.StatusMovedPermanently))
 	router.Handler(http.MethodGet, "/swagger/*any", swag.WrapHandler)
+
 	metHandler := metrics.Handler{}
 	metHandler.Register(router)
 
@@ -76,6 +84,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		cfg:         cfg,
 		db:          d,
 		cache:       repository.NewCache(ctx, cfg),
+		jrpc2Server: jrpc2.NewJrpc2Server(),
 	}, nil
 }
 
@@ -107,7 +116,7 @@ func (s *Server) RunHTTPServer(ctx context.Context) error {
 		return err
 	}
 
-	err = s.httpServer.Shutdown(context.Background())
+	err = s.httpServer.Shutdown(ctx)
 	if err != nil {
 		return err
 	}

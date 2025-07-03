@@ -7,8 +7,9 @@ import (
 	"sort"
 	"sync"
 
-	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
@@ -101,21 +102,21 @@ func InitTasks() {
 			ID:        utils.Gen_uuid(),
 			Action:    GetParameterValues,
 			Params:    paramlistGet,
-			Once:      false,
+			Once:      true,
 			EventCode: 1,
 		},
 		{
 			ID:        utils.Gen_uuid(),
 			Action:    GetParameterAttributes,
 			Params:    paramGetAttr,
-			Once:      false,
+			Once:      true,
 			EventCode: 1,
 		},
 		{
 			ID:        utils.Gen_uuid(),
 			Action:    GetParameterNames,
 			Params:    paramsGetName,
-			Once:      false,
+			Once:      true,
 			EventCode: 1,
 		},
 	}
@@ -141,17 +142,6 @@ func InitTasks() {
 
 }
 
-/*
-	func AddTask(serial string, task Task) {
-		if _, ok := l.TaskList[serial]; ok {
-			l.mu.Lock()
-			defer l.mu.Unlock()
-			l.TaskList[serial] = append(l.TaskList[serial], task)
-		} else {
-			l.TaskList[serial] = []Task{task}
-		}
-	}
-*/
 func DeleteTaskByID(serial, id string) {
 	if maptasks, ok := l.TaskList[serial]; ok {
 		for i, task := range maptasks {
@@ -305,44 +295,36 @@ func parseTask(task map[string]any) *Task {
 
 	return nil
 }
-func AddToScripter(getScript map[string]any) (string, error) {
-	script := p.GetXML(getScript, "Script")
+func AddToScripter(sn string, scriptList map[string]any) error {
 
-	if script == nil {
-		return "", errors.New("script is empty")
+	keys := make([]string, 0, len(scriptList))
+	for k := range scriptList {
+		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 
-	serial, ok := p.GetXML(script, "Serial").(string)
-	if !ok || serial == "" {
-		return "", errors.New("serial is empty")
-	}
+	for _, k := range keys {
+		if curr_task, ok := scriptList[k]; ok {
+			if addtask, ok := curr_task.(map[string]any); ok {
+				find_task := parseTask(addtask)
 
-	if scriptList, ok := script.(map[string]any); ok {
-		keys := make([]string, 0, len(scriptList))
-		for k := range scriptList {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
-		for _, k := range keys {
-			if curr_task, ok := scriptList[k]; ok {
-				if addtask, ok := curr_task.(map[string]any); ok {
-					find_task := parseTask(addtask)
-
-					if find_task == nil {
-						return "", errors.New("failed task")
-					}
-					scripterTasks[serial] = append(scripterTasks[serial], *find_task)
+				if find_task == nil {
+					return errors.New("failed task")
 				}
+				scripterTasks[sn] = append(scripterTasks[sn], *find_task)
 			}
 		}
 	}
+	logger.LogDebug("AddToScripter", "scripterTasks", scripterTasks)
 
-	return serial, nil
+	return nil
 }
-func CheckNewConReqTasks(serial string) {
-	if script_tasks, ok := scripterTasks[serial]; ok {
-		l.TaskList[serial] = append(l.TaskList[serial], script_tasks...)
-		scripterTasks[serial] = []Task{}
+func CheckNewConReqTasks(mp *devmodel.ResponseTask) {
+	logger.LogDebug("CheckNewConReqTasks", scripterTasks)
+
+	if script_tasks, ok := scripterTasks[mp.Serial]; ok {
+		mp.SetBatchSizeTasks(len(script_tasks))
+		l.TaskList[mp.Serial] = append(l.TaskList[mp.Serial], script_tasks...)
+		scripterTasks[mp.Serial] = []Task{}
 	}
 }
