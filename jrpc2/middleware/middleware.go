@@ -28,64 +28,15 @@ func NewHandler(Cache *repository.Cache) handlers.Handler {
 }
 
 func (h *handlerJrpc2) Register(router *httprouter.Router) {
-	router.HandlerFunc(http.MethodGet, "/front", apperror.Middleware(h.Exec2FrontReq))
+	router.HandlerFunc(http.MethodGet, "/front", apperror.Middleware(h.ExecFrontReq))
 }
 
-/*
 // Execute Frontend request
 // @Summary Get Users
 // @Tags Frontend
 // @Success 200
 // @Router / [get]
 func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) error {
-	logger.LogDebug("Enter ExecFrontReq")
-
-	msg, err := io.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-
-	parsereq, err := jrpc2.ParseRequests(msg)
-	if err != nil {
-		return err
-	}
-
-	for _, req := range parsereq {
-		methods := strings.Split(req.Method, ".")
-
-		if len(methods) != 2 {
-			return apperror.ErrMethodNotFound
-		}
-
-		if handler, ok := mapInstance[methods[0]][methods[1]]; ok {
-
-			mp := make(map[string]any)
-
-			if err := json.Unmarshal(req.Params, &mp); err != nil {
-				logger.LogDebug("Get", err)
-				return err
-			}
-
-			if script, ok := mp["Script"].(map[string]any); ok {
-				if ret, err := handler(context.Background(), h.Cache, script); err != nil {
-					return err
-				} else {
-					w.Write(ret)
-				}
-			} else {
-				return apperror.ErrInvalidType
-			}
-
-		} else {
-			return apperror.ErrMethodNotFound
-		}
-	}
-
-	return nil
-}
-*/
-
-func (h *handlerJrpc2) Exec2FrontReq(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter ExecFrontReq")
 
 	msg, err := io.ReadAll(r.Body)
@@ -116,7 +67,7 @@ func (h *handlerJrpc2) Exec2FrontReq(w http.ResponseWriter, r *http.Request) err
 
 					task := func() (any, error) {
 						var ret []byte
-						ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 						defer cancel()
 						err := jrcp2server.Instance.Server.Client.CallResult(ctx, req.Method, script, &ret)
 						return ret, err
