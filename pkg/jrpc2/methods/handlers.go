@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
-	"github.com/ecpartan/soap-server-tr069/jrpc2/methods/response"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/tasks"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
@@ -109,6 +109,7 @@ func AddScriptTask(ctx context.Context, req map[string]any) ([]byte, error) {
 	response.EndTaskChansMap[sn] = make(chan *response.RetScriptTask, 1)
 	go watchChannel(sn, response.EndTaskChansMap[sn], &wg)
 	wg.Wait()
+
 	logger.LogDebug("Task finished")
 
 	if resp, ok := response.EndTaskResponse[sn]; !ok {

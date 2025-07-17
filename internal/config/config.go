@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	dbconf "github.com/ecpartan/soap-server-tr069/db/config"
+	dbconf "github.com/ecpartan/soap-server-tr069/repository/db/config"
 	"github.com/ilyakaznacheev/cleanenv"
 )
 

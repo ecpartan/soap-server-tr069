@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ecpartan/soap-server-tr069/db"
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/repository/db"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/julienschmidt/httprouter"
 )

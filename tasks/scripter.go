@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ecpartan/soap-server-tr069/httpserver"
 	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/soap"
-	"github.com/ecpartan/soap-server-tr069/soaprpc"
 )
 
 func NextTask(mp *devmodel.ResponseTask, addr string, evcodes map[int]struct{}) Task {
@@ -71,7 +71,7 @@ func PrepareListTask(task Task, rp *devmodel.ResponseTask) Task {
 				if ok, start, end := SubstringInstance(str, '#', '.'); ok {
 					replacing_trim := str[start:end]
 					logger.LogDebug("replacing_trim", replacing_trim)
-					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil {
+					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(rp.RespList) {
 						replace_trim := rp.RespList[i].Num
 						task_params[k].Name = str[:start] + replace_trim + str[end:]
 						logger.LogDebug("tasks", task_params)
@@ -85,7 +85,7 @@ func PrepareListTask(task Task, rp *devmodel.ResponseTask) Task {
 			str := task_params.Name
 			if ok, start, end := SubstringInstance(str, '#', '.'); ok {
 				replacing_trim := str[start:end]
-				if i, err := strconv.Atoi(replacing_trim[1:]); err == nil {
+				if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(rp.RespList) {
 					replace_trim := rp.RespList[i].Num
 					task_params.Name = str[:start] + replace_trim + str[end:]
 				}
@@ -112,12 +112,12 @@ func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp 
 }
 
 var map_tasks = map[TaskRequestType]func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo){
-	GetParameterValues:     soaprpc.TransGetParameterValues,
-	SetParameterValues:     soaprpc.TransSetParameterValues,
-	AddObject:              soaprpc.TransAddObject,
-	DeleteObject:           soaprpc.TransDeleteObject,
-	GetParameterNames:      soaprpc.TransGetParameterNames,
-	GetParameterAttributes: soaprpc.TransGetParameterAttributes,
+	GetParameterValues:     httpserver.TransGetParameterValues,
+	SetParameterValues:     httpserver.TransSetParameterValues,
+	AddObject:              httpserver.TransAddObject,
+	DeleteObject:           httpserver.TransDeleteObject,
+	GetParameterNames:      httpserver.TransGetParameterNames,
+	GetParameterAttributes: httpserver.TransGetParameterAttributes,
 }
 
 func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo), task Task, rp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup, w http.ResponseWriter) {

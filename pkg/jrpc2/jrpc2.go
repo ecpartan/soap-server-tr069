@@ -6,7 +6,7 @@ import (
 	"github.com/creachadair/jrpc2/handler"
 	"github.com/creachadair/jrpc2/server"
 
-	"github.com/ecpartan/soap-server-tr069/jrpc2/methods"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods"
 )
 
 type Jrpc2Server struct {

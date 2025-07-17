@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/ecpartan/soap-server-tr069/httpserver"
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
@@ -12,7 +13,6 @@ import (
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/ecpartan/soap-server-tr069/soap"
-	"github.com/ecpartan/soap-server-tr069/soaprpc"
 	"github.com/ecpartan/soap-server-tr069/tasks"
 	"github.com/julienschmidt/httprouter"
 )
@@ -167,7 +167,7 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 	case soap.FaultResponse:
 		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
-		soaprpc.TransInformResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo)
+		httpserver.TransInformResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo)
 	case soap.GetParameterValuesResponse:
 		tasks.ParseGetResponse(mp, h.Cache)
 	case soap.SetParameterValuesResponse:

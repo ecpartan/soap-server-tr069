@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 
-	dbconf "github.com/ecpartan/soap-server-tr069/db/config"
-	"github.com/ecpartan/soap-server-tr069/db/dao"
-	"github.com/ecpartan/soap-server-tr069/db/mysql"
-	"github.com/ecpartan/soap-server-tr069/db/postgres"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	dbconf "github.com/ecpartan/soap-server-tr069/repository/db/config"
+	"github.com/ecpartan/soap-server-tr069/repository/db/dao"
+	"github.com/ecpartan/soap-server-tr069/repository/db/mysql"
+	"github.com/ecpartan/soap-server-tr069/repository/db/postgres"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )

@@ -3,8 +3,8 @@ package devmodel
 import (
 	"sync"
 
-	"github.com/ecpartan/soap-server-tr069/jrpc2/methods/response"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
 )
 
 type SoapResponse struct {

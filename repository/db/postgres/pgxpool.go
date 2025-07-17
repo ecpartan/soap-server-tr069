@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"github.com/ecpartan/soap-server-tr069/db/config"
-	"github.com/ecpartan/soap-server-tr069/db/postgres/migrations"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/repository/db/config"
+	"github.com/ecpartan/soap-server-tr069/repository/db/postgres/migrations"
 	"github.com/jackc/pgx/stdlib"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

@@ -9,8 +9,8 @@ import (
 
 	"github.com/creachadair/jrpc2"
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
-	jrcp2server "github.com/ecpartan/soap-server-tr069/jrpc2"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	jrcp2server "github.com/ecpartan/soap-server-tr069/pkg/jrpc2"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/fanliao/go-promise"

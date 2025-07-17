@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/ecpartan/soap-server-tr069/internal/config"
-	logger "github.com/ecpartan/soap-server-tr069/loggger"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/go-redis/redis/v8"
 	"github.com/m7shapan/lfu-redis"
 )
@@ -57,6 +57,7 @@ func (c *Cache) Set(key string, value any) {
 	c.Lock()
 	defer c.Unlock()
 	err := c.c.Put(key, ret)
-	logger.LogDebug("Error getting value from cache: %v", err)
-
+	if err != nil {
+		logger.LogDebug("Error getting value from cache: %v", err)
+	}
 }
