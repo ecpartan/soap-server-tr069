@@ -88,12 +88,10 @@ func SetValueInJSON(iface any, path string, key, value string) any {
 	}
 	// path not found -> create
 	if len(split) == 1 {
-		logger.LogDebug("mp", m[split[0]], reflect.TypeOf(m[split[0]]))
 		if m[split[0]] == nil {
 			m[split[0]] = map[string]any{key: value}
 		} else {
 			if mp, ok := m[split[0]].(map[string]any); ok {
-				logger.LogDebug("mp", mp)
 
 				mp[key] = value
 				m[split[0]] = mp
@@ -274,7 +272,6 @@ func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 	UpdateCacheBySerial(mp.Serial, paramlist, l, VALUES)
 
 	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Get"}
-
 }
 
 func ParseGetRPCMethodsResponse(mp *devmap.DevID) {

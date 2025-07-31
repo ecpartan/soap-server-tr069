@@ -221,9 +221,10 @@ func createSetParamTask(mapTask []any) []taskmodel.SetParamValTask {
 }
 
 func parseTask(task map[string]any) *Task {
-	fmt.Println(task)
+	logger.LogDebug("parseTask", task)
+
 	for k, v := range task {
-		fmt.Println(reflect.TypeOf(v))
+		logger.LogDebug("type task", reflect.TypeOf(v))
 		if mapTask, ok := v.(map[string]any); ok {
 			switch k {
 			case "AddObject":
@@ -247,11 +248,19 @@ func parseTask(task map[string]any) *Task {
 					EventCode: 6,
 				}
 			case "GetParameterValues":
+				var lst []string
+				if mapN, ok := mapTask["Name"].([]any); ok {
+					for _, v := range mapN {
+						lst = append(lst, v.(string))
+					}
+				} else {
+					lst = mapTask["Name"].([]string)
+				}
 				return &Task{
 					ID:     utils.Gen_uuid(),
 					Action: GetParameterValues,
 					Params: taskmodel.GetParamValTask{
-						Name: mapTask["Name"].([]string),
+						Name: lst,
 					},
 					Once:      true,
 					EventCode: 6,
@@ -269,6 +278,7 @@ func parseTask(task map[string]any) *Task {
 					EventCode: 6,
 				}
 			case "GetParameterAttributes":
+
 				return &Task{
 					ID:     utils.Gen_uuid(),
 					Action: GetParameterAttributes,
@@ -295,6 +305,7 @@ func parseTask(task map[string]any) *Task {
 
 	return nil
 }
+
 func AddToScripter(sn string, scriptList map[string]any) error {
 
 	keys := make([]string, 0, len(scriptList))
@@ -320,8 +331,7 @@ func AddToScripter(sn string, scriptList map[string]any) error {
 	return nil
 }
 func CheckNewConReqTasks(mp *devmodel.ResponseTask) {
-	logger.LogDebug("CheckNewConReqTasks", scripterTasks)
-
+	logger.LogDebug("CheckNewConReqTasks")
 	if script_tasks, ok := scripterTasks[mp.Serial]; ok {
 		mp.SetBatchSizeTasks(len(script_tasks))
 		l.TaskList[mp.Serial] = append(l.TaskList[mp.Serial], script_tasks...)

@@ -36,10 +36,14 @@ func SetLevel(lev string) {
 
 // caller return caller function name
 func LogDebug(mes string, args ...any) {
-	printMsg("[DEBUG]", 0, mes, args...)
+	printfMsg("[DEBUG]", 0, mes, args...)
 }
 
-func printMsg(level string, depth int, mes string, args ...any) {
+func LogErr(mes string, args ...any) {
+	printfMsg("[ERROR]", 0, mes, args...)
+}
+
+func printfMsg(level string, depth int, mes string, args ...interface{}) {
 	// Chek for appropriate level of logging
 	if logFilter.Check([]byte(level)) {
 		argsStr := getArgsString(args...) // get formated string with arguments

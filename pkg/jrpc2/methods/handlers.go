@@ -16,6 +16,11 @@ import (
 	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
+const (
+	MethodAddScript = "AddScript"
+	MethodGetTree   = "GetTree"
+)
+
 func Get(ctx context.Context, req map[string]any) ([]byte, error) {
 
 	if sn, ok := req["Serial"].(string); !ok {

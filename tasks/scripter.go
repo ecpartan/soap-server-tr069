@@ -9,6 +9,7 @@ import (
 
 	"github.com/ecpartan/soap-server-tr069/httpserver"
 	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
+	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/soap"
@@ -106,6 +107,10 @@ func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp 
 
 		return true
 	} else {
+		if task.Action == GetParameterValues {
+			logger.LogDebug("GetParameterValues", task.Params.(taskmodel.GetParamValTask))
+			p.ClearCacheNodes(mp.Serial, task.Params.(taskmodel.GetParamValTask).Name)
+		}
 		ExecuteTask(task, wg, mp, sp, w)
 	}
 	return false

@@ -1,0 +1,8 @@
+{
+  "Script": {
+    "1": {
+      "GetParameterValues": {"Name": ["InternetGatewayDevice.WANDevice."]}
+    },
+    "Serial": "94DE80BF38B2"
+  }
+}

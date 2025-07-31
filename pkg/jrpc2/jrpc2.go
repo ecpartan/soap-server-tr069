@@ -19,8 +19,8 @@ func NewJrpc2Server() *Jrpc2Server {
 	once := &sync.Once{}
 	once.Do(func() {
 		assigner := handler.Map{
-			"AddScript": handler.New(methods.AddScriptTask),
-			"GetTree":   handler.New(methods.Get),
+			methods.MethodAddScript: handler.New(methods.AddScriptTask),
+			methods.MethodGetTree:   handler.New(methods.Get),
 		}
 
 		Instance = &Jrpc2Server{

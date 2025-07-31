@@ -13,7 +13,8 @@ import (
 )
 
 type Cache struct {
-	c *lfu.LFUCache
+	rediscli *redis.Client
+	c        *lfu.LFUCache
 	sync.RWMutex
 }
 
@@ -30,7 +31,8 @@ func NewCache(ctx context.Context, cfg *config.Config) *Cache {
 			PoolSize:     cfg.Redis.PoolSize,
 			MinIdleConns: cfg.Redis.MinIdleConns,
 		})
-		c = &Cache{c: lfu.New(cfg.Redis.MaxActiveConns, redisClient)}
+
+		c = &Cache{c: lfu.New(cfg.Redis.MaxActiveConns, redisClient), rediscli: redisClient}
 	})
 	return c
 }
@@ -38,11 +40,11 @@ func NewCache(ctx context.Context, cfg *config.Config) *Cache {
 func GetCache() *Cache {
 	return c
 }
+
 func (c *Cache) Get(key string) map[string]any {
 	c.RLock()
 	defer c.RUnlock()
 	if val, err := c.c.Get(key); err == nil {
-		logger.LogDebug("Getting cache value: %s", val)
 		ret := make(map[string]any)
 		json.Unmarshal([]byte(val), &ret)
 		return ret
@@ -51,6 +53,7 @@ func (c *Cache) Get(key string) map[string]any {
 		return nil
 	}
 }
+
 func (c *Cache) Set(key string, value any) {
 	ret, _ := json.Marshal(value)
 	logger.LogDebug("Setting cache value: %s", string(ret))

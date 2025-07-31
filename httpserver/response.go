@@ -5,6 +5,7 @@ import (
 
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+
 	"github.com/ecpartan/soap-server-tr069/soap"
 )
 

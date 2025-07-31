@@ -103,8 +103,10 @@ CREATE TABLE IF NOT EXISTS device (
     cr_username VARCHAR(50),
     cr_password VARCHAR(50),
     mac VARCHAR(50),
-    last_inform TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ NOT NULL,
+    updated_at    TIMESTAMPTZ,
     profile_id UUID REFERENCES profile(id)
+
 );
 
 
@@ -159,8 +161,8 @@ SELECT gen_random_uuid(), 'config', 'config', 100, '1.0.0', NOW(), NOW();
 INSERT INTO profile (id, name, description, firmware_id, config_id)
 VALUES (gen_random_uuid(), 'default', 'Default profile', (SELECT id FROM firmware WHERE name = 'firmware' LIMIT 1),( SELECT id FROM config WHERE name = 'config'));
 
-INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, ip, port, uptime, status, datamodel, username, password, cr_username, cr_password, mac, last_inform, profile_id)
-SELECT gen_random_uuid(), '94DE80BF38B2', 'D-LINK', 'DIR-825', '94DE80', 'develop', 'DebugOnHost', '127.0.0.1', '8999', 0, 'status', '98', '', '', '', '', '94:DE:80:BF:38:B2', NOW(), id FROM profile WHERE name = 'default';
+INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, ip, port, uptime, status, datamodel, username, password, cr_username, cr_password, mac, created_at, updated_at, profile_id)
+SELECT gen_random_uuid(), '94DE80BF38B2', 'D-LINK', 'DIR-825', '94DE80', 'develop', 'DebugOnHost', '127.0.0.1', '8999', 0, 'status', '98', '', '', '', '', '94:DE:80:BF:38:B2', NOW(), NOW(), id FROM profile WHERE name = 'default';
 
 
 INSERT INTO task_op (id, name, body)

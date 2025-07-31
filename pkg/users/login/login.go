@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
@@ -68,7 +69,12 @@ func (h *handlerLogin) Login(w http.ResponseWriter, r *http.Request) error {
 
 	jwtsecret := getJWTsecret()
 
-	t, err := generateJWT(users.ID, jwtsecret)
+	id, err := strconv.Atoi(users.Id)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %v", err)
+	}
+
+	t, err := generateJWT(id, jwtsecret)
 	if err != nil {
 		return fmt.Errorf("could not generate JWT: %v", err)
 	}

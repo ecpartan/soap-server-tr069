@@ -11,6 +11,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/middleware"
 	"github.com/ecpartan/soap-server-tr069/repository/db"
+	"github.com/ecpartan/soap-server-tr069/web"
 
 	"github.com/ecpartan/soap-server-tr069/pkg/metrics"
 	"github.com/ecpartan/soap-server-tr069/pkg/users/login"
@@ -57,6 +58,8 @@ func (s *Server) Register() {
 
 	frontHandler := middleware.NewHandler(s.cache)
 	frontHandler.Register(s.router)
+
+	web.Register()
 }
 
 // NewServer construct a new SOAP server
@@ -67,6 +70,9 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	logger.LogDebug("swagger docs initializing")
 	router.Handler(http.MethodGet, "/swagger", http.RedirectHandler("/swagger/index.html", http.StatusMovedPermanently))
 	router.Handler(http.MethodGet, "/swagger/*any", swag.WrapHandler)
+	cache := repository.NewCache(ctx, cfg)
+
+	//frontend.New(router)
 
 	metHandler := metrics.Handler{}
 	metHandler.Register(router)
@@ -83,7 +89,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		router:      router,
 		cfg:         cfg,
 		db:          d,
-		cache:       repository.NewCache(ctx, cfg),
+		cache:       cache,
 		jrpc2Server: jrpc2.NewJrpc2Server(),
 	}, nil
 }
