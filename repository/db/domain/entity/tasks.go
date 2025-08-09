@@ -1,4 +1,4 @@
-package dao
+package entity
 
 type Task struct {
 	Id         string `db:"id"`

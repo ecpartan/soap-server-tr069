@@ -10,7 +10,8 @@ import (
 	_ "github.com/ecpartan/soap-server-tr069/docs"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/middleware"
-	"github.com/ecpartan/soap-server-tr069/repository/db"
+	usecase_service "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/service"
+	"github.com/ecpartan/soap-server-tr069/repository/storage"
 	"github.com/ecpartan/soap-server-tr069/web"
 
 	"github.com/ecpartan/soap-server-tr069/pkg/metrics"
@@ -32,7 +33,7 @@ type Server struct {
 	mapResponse *devmap.DevMap
 	router      *httprouter.Router
 	cfg         *config.Config
-	db          *db.Service
+	service     *usecase_service.Service
 	httpServer  *http.Server
 	cache       *repository.Cache
 	jrpc2Server *jrpc2.Jrpc2Server
@@ -41,7 +42,7 @@ type Server struct {
 func (s *Server) Register() {
 	logger.LogDebug("Registering handlers")
 
-	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache)
+	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService)
 	mainHandler.Register(s.router)
 
 	taskHandler := devsoap.NewHandlerCR(s.cache)
@@ -50,10 +51,10 @@ func (s *Server) Register() {
 	treeHandler := devsoap.NewHandlerGetTree(s.cache)
 	treeHandler.Register(s.router)
 
-	userHandler := devsoap.NewHandlerGetUsers(s.db)
+	userHandler := devsoap.NewHandlerGetUsers(s.service.UserService)
 	userHandler.Register(s.router)
 
-	loginHandler := login.NewHandler(s.db)
+	loginHandler := login.NewHandler(s.service.UserService)
 	loginHandler.Register(s.router)
 
 	frontHandler := middleware.NewHandler(s.cache)
@@ -72,23 +73,22 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	router.Handler(http.MethodGet, "/swagger/*any", swag.WrapHandler)
 	cache := repository.NewCache(ctx, cfg)
 
-	//frontend.New(router)
-
 	metHandler := metrics.Handler{}
 	metHandler.Register(router)
 
-	d, err := db.New(ctx, &cfg.DatabaseConf)
-	logger.LogDebug("Creating new server", err)
+	dbstorage, err := storage.NewStorage(&cfg.DatabaseConf)
 
 	if err != nil {
 		return nil, err
 	}
 
+	serviceDevice := usecase_service.NewService(dbstorage.DevStorage, dbstorage.UserStorage)
+
 	return &Server{
 		mapResponse: devmap.NewDevMap(),
 		router:      router,
 		cfg:         cfg,
-		db:          d,
+		service:     serviceDevice,
 		cache:       cache,
 		jrpc2Server: jrpc2.NewJrpc2Server(),
 	}, nil

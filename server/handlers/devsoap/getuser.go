@@ -8,13 +8,13 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/pkg/users/login"
-	"github.com/ecpartan/soap-server-tr069/repository/db"
+	usecase_user "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/user"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/julienschmidt/httprouter"
 )
 
 type handlerGetUsers struct {
-	db *db.Service
+	service *usecase_user.Service
 }
 
 type Middleware struct {
@@ -26,9 +26,9 @@ func (m Middleware) Wrap(handler http.Handler) http.Handler {
 	return m.next
 }
 
-func NewHandlerGetUsers(db *db.Service) handlers.Handler {
+func NewHandlerGetUsers(service *usecase_user.Service) handlers.Handler {
 	return &handlerGetUsers{
-		db: db,
+		service: service,
 	}
 }
 func (h *handlerGetUsers) Register(router *httprouter.Router) {
@@ -43,10 +43,8 @@ func (h *handlerGetUsers) Register(router *httprouter.Router) {
 func (h *handlerGetUsers) GetUsers(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter GetUsers")
 
-	users, err := h.db.GetUsers()
-	if err != nil {
-		return fmt.Errorf("not found tree")
-	}
+	users := h.service.GetAll()
+
 	logger.LogDebug("users", users)
 	dat, err := json.Marshal(users)
 	if err != nil {

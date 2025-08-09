@@ -1,4 +1,4 @@
-package dao
+package entity
 
 type Profile struct {
 	Id          string `db:"id"`

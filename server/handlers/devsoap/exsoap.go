@@ -11,6 +11,8 @@ import (
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
+	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
+	usecase_device "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/device"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/tasks"
@@ -20,17 +22,61 @@ import (
 type handler struct {
 	mapResponse *devmap.DevMap
 	Cache       *repository.Cache
+	service     *usecase_device.Service
 }
 
-func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache) handlers.Handler {
+func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache, service *usecase_device.Service) handlers.Handler {
 	return &handler{
 		mapResponse: mapResponse,
 		Cache:       Cache,
+		service:     service,
 	}
 }
 
 func (h *handler) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, "/", apperror.Middleware(h.PerformSoap))
+}
+
+func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform map[string]any) error {
+	dev, err := h.service.GetOneBySn(serial)
+
+	logger.LogDebug("GetDevicebySerial", dev, err)
+	if err != nil {
+		return err
+	}
+
+	var manufacturer, model, oui, sw, hw, datamodel, crurl string
+	devid := p.GetXML(inform, "DeviceId")
+	manufacturer = p.GetXMLString(devid, "Manufacturer")
+	oui = p.GetXMLString(inform, "OUI")
+
+	tree := cache.Get(serial)
+	if p.GetXML(tree, soap.Pref98) != nil {
+		datamodel = "98"
+	} else {
+		datamodel = "181"
+	}
+	crurl = p.GetXMLValue(tree, soap.CR_URL)
+	hw = p.GetXMLValue(tree, soap.HW_V)
+	sw = p.GetXMLValue(tree, soap.SW_V)
+	model = p.GetXMLValue(tree, soap.MODELNAME)
+
+	view := entity.NewDeviceView(serial, manufacturer, model, oui, sw, hw, datamodel, crurl)
+
+	if dev == nil {
+		_, err := h.service.CreateDevice(*view)
+		return err
+	} else {
+		dev.Datamodel = datamodel
+		dev.CrURL = crurl
+		dev.HwVersion = hw
+		dev.SwVersion = sw
+		dev.Model = model
+		dev.OUI = oui
+		dev.Manufacturer = manufacturer
+
+		return h.service.UpdateDevice(dev)
+	}
 }
 
 func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType {
@@ -68,6 +114,7 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
 				logger.LogDebug("paramlist", paramlist)
 				tasks.UpdateCacheBySerial(sn, paramlist, h.Cache, tasks.VALUES)
+				h.updateDeviceDB(sn, h.Cache, ret)
 
 				mp.Body = ret
 				mp.Serial = sn

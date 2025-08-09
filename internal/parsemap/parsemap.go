@@ -36,6 +36,14 @@ func GetXML(xmlMap any, key string) any {
 	return xmlMap
 }
 
+func GetXMLValue(xmlMap any, key string) string {
+	base := GetXML(xmlMap, key)
+	if val, ok := getXML(base, "Value").(string); ok {
+		return val
+	}
+	return ""
+}
+
 func ClearCacheNodes(sn string, lst []string) {
 	if len(lst) == 0 {
 		return

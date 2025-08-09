@@ -32,7 +32,7 @@ const (
 )
 
 type Task struct {
-	ID        string
+	ID        utils.ID
 	Action    TaskRequestType
 	Params    any
 	EventCode int
@@ -40,7 +40,7 @@ type Task struct {
 }
 
 type TaskResponse struct {
-	TaskId       string
+	TaskId       utils.ID
 	ResponseList any
 }
 
@@ -99,21 +99,21 @@ func InitTasks() {
 	}
 	l.TaskList["94DE80BF38B2"] = []Task{
 		{
-			ID:        utils.Gen_uuid(),
+			ID:        utils.NewID(),
 			Action:    GetParameterValues,
 			Params:    paramlistGet,
 			Once:      true,
 			EventCode: 1,
 		},
 		{
-			ID:        utils.Gen_uuid(),
+			ID:        utils.NewID(),
 			Action:    GetParameterAttributes,
 			Params:    paramGetAttr,
 			Once:      true,
 			EventCode: 1,
 		},
 		{
-			ID:        utils.Gen_uuid(),
+			ID:        utils.NewID(),
 			Action:    GetParameterNames,
 			Params:    paramsGetName,
 			Once:      true,
@@ -142,7 +142,7 @@ func InitTasks() {
 
 }
 
-func DeleteTaskByID(serial, id string) {
+func DeleteTaskByID(serial string, id utils.ID) {
 	if maptasks, ok := l.TaskList[serial]; ok {
 		for i, task := range maptasks {
 			if task.ID == id {
@@ -229,7 +229,7 @@ func parseTask(task map[string]any) *Task {
 			switch k {
 			case "AddObject":
 				return &Task{
-					ID:     utils.Gen_uuid(),
+					ID:     utils.NewID(),
 					Action: AddObject,
 					Params: taskmodel.AddTask{
 						Name: mapTask["Name"].(string),
@@ -239,7 +239,7 @@ func parseTask(task map[string]any) *Task {
 				}
 			case "DeleteObject":
 				return &Task{
-					ID:     utils.Gen_uuid(),
+					ID:     utils.NewID(),
 					Action: DeleteObject,
 					Params: taskmodel.DeleteTask{
 						Name: mapTask["Name"].(string),
@@ -257,7 +257,7 @@ func parseTask(task map[string]any) *Task {
 					lst = mapTask["Name"].([]string)
 				}
 				return &Task{
-					ID:     utils.Gen_uuid(),
+					ID:     utils.NewID(),
 					Action: GetParameterValues,
 					Params: taskmodel.GetParamValTask{
 						Name: lst,
@@ -268,7 +268,7 @@ func parseTask(task map[string]any) *Task {
 
 			case "GetParameterNames":
 				return &Task{
-					ID:     utils.Gen_uuid(),
+					ID:     utils.NewID(),
 					Action: GetParameterNames,
 					Params: taskmodel.GetParamNamesTask{
 						ParameterPath: mapTask["Name"].(string),
@@ -280,7 +280,7 @@ func parseTask(task map[string]any) *Task {
 			case "GetParameterAttributes":
 
 				return &Task{
-					ID:     utils.Gen_uuid(),
+					ID:     utils.NewID(),
 					Action: GetParameterAttributes,
 					Params: taskmodel.GetParamAttrTask{
 						Name: mapTask["Name"].([]string),
@@ -292,7 +292,7 @@ func parseTask(task map[string]any) *Task {
 		} else if arrayTask, ok := v.([]any); ok {
 			if k == "SetParameterValues" {
 				return &Task{
-					ID:        utils.Gen_uuid(),
+					ID:        utils.NewID(),
 					Action:    SetParameterValues,
 					Params:    createSetParamTask(arrayTask),
 					Once:      true,

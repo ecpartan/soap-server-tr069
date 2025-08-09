@@ -8,6 +8,7 @@ import (
 
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/utils"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -16,7 +17,7 @@ func getJWTsecret() string {
 	return "secret"
 }
 
-func generateJWT(userID int, secretKey string) (string, error) {
+func generateJWT(userID utils.ID, secretKey string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"exp":     time.Now().Add(time.Hour * 1).Unix(),
@@ -40,9 +41,7 @@ func AuthMiddleware(next apperror.AppHandler) apperror.AppHandler {
 		logger.LogDebug("authHeader", authHeader)
 
 		if authHeader == "" {
-
 			return fmt.Errorf("not authorized")
-
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")

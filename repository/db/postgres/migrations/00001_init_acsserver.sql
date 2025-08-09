@@ -93,8 +93,6 @@ CREATE TABLE IF NOT EXISTS device (
     oui VARCHAR(50) NOT NULL,
     sw_version VARCHAR(50) NOT NULL,
     hw_version VARCHAR(50) NOT NULL,
-    ip VARCHAR(50),
-    port VARCHAR(50),
     uptime BIGINT,
     status VARCHAR(50),
     datamodel VARCHAR(50),
@@ -102,11 +100,11 @@ CREATE TABLE IF NOT EXISTS device (
     password VARCHAR(50),
     cr_username VARCHAR(50),
     cr_password VARCHAR(50),
+    cr_url  VARCHAR(100),
     mac VARCHAR(50),
     created_at    TIMESTAMPTZ NOT NULL,
     updated_at    TIMESTAMPTZ,
     profile_id UUID REFERENCES profile(id)
-
 );
 
 
@@ -161,9 +159,8 @@ SELECT gen_random_uuid(), 'config', 'config', 100, '1.0.0', NOW(), NOW();
 INSERT INTO profile (id, name, description, firmware_id, config_id)
 VALUES (gen_random_uuid(), 'default', 'Default profile', (SELECT id FROM firmware WHERE name = 'firmware' LIMIT 1),( SELECT id FROM config WHERE name = 'config'));
 
-INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, ip, port, uptime, status, datamodel, username, password, cr_username, cr_password, mac, created_at, updated_at, profile_id)
-SELECT gen_random_uuid(), '94DE80BF38B2', 'D-LINK', 'DIR-825', '94DE80', 'develop', 'DebugOnHost', '127.0.0.1', '8999', 0, 'status', '98', '', '', '', '', '94:DE:80:BF:38:B2', NOW(), NOW(), id FROM profile WHERE name = 'default';
-
+INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, cr_url, uptime, status, datamodel, username, password, cr_username, cr_password, mac, created_at, updated_at, profile_id)
+SELECT gen_random_uuid(), '94DE80BF38B2', 'D-LINK', 'DIR-825', '94DE80', 'develop', 'DebugOnHost', 'http://127.0.0.1:8999/', 0, 'off', '98', '', '', '', '', '94:DE:80:BF:38:B2', NOW(), NOW(), id FROM profile WHERE name = 'default';
 
 INSERT INTO task_op (id, name, body)
 VALUES (gen_random_uuid(), 'Script', '{"Script":{"1":{"AddObject":{"Name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection."}},"2":{"SetParameterValues":[{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.SubnetMask","value":"255.255.255.240","type":"xsd:string"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.Enable","value":"1","type":"xsd:boolean"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.AddressingType","value":"Static","type":"xsd:string"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.ExternalIPAddress","value":"192.168.152.31","type":"xsd:string"}]},"Serial":"94DE80BF38B2"}}');

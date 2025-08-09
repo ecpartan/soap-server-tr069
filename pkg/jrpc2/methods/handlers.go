@@ -12,6 +12,7 @@ import (
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
+	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/tasks"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
@@ -96,11 +97,11 @@ func AddScriptTask(ctx context.Context, req map[string]any) ([]byte, error) {
 		return nil, ErrNotfoundTree
 	}
 
-	url := p.GetXML(tree, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL.Value")
+	url := p.GetXMLValue(tree, soap.CR_URL)
 
-	if crURL, ok := url.(string); ok {
-		logger.LogDebug("crURL", crURL)
-		dr := dac.NewRequest("", "", "GET", crURL, "")
+	if url != "" {
+		logger.LogDebug("crURL", url)
+		dr := dac.NewRequest("", "", "GET", url, "")
 		_, err := dr.Execute()
 
 		if err != nil {

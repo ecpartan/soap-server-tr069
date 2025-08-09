@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
-	"github.com/ecpartan/soap-server-tr069/repository/db"
+	usecase_user "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/user"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/julienschmidt/httprouter"
 )
 
 type handlerLogin struct {
-	db *db.Service
+	service *usecase_user.Service
 }
 
-func NewHandler(db *db.Service) handlers.Handler {
+func NewHandler(service *usecase_user.Service) handlers.Handler {
 	return &handlerLogin{
-		db: db,
+		service: service,
 	}
 }
 
@@ -56,25 +55,25 @@ func (h *handlerLogin) Login(w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf("could not unmarshal POST: %v", err)
 	}
 
-	users, err := h.db.GetUser(login.Username)
+	user, err := h.service.GetUserbyLogin(login.Username)
 	if err != nil {
 		return fmt.Errorf("not found user")
 	}
 
-	logger.LogDebug("users", users)
+	logger.LogDebug("users", user)
 
-	if users.Password != login.Password {
+	if user.Password != login.Password {
 		return fmt.Errorf("password is not corrected")
 	}
 
 	jwtsecret := getJWTsecret()
+	/*
+		id, err := strconv(user.ID)
+		if err != nil {
+			return fmt.Errorf("invalid user ID: %v", err)
+		}*/
 
-	id, err := strconv.Atoi(users.Id)
-	if err != nil {
-		return fmt.Errorf("invalid user ID: %v", err)
-	}
-
-	t, err := generateJWT(id, jwtsecret)
+	t, err := generateJWT(user.ID, jwtsecret)
 	if err != nil {
 		return fmt.Errorf("could not generate JWT: %v", err)
 	}
