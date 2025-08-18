@@ -11,24 +11,29 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	jrcp2server "github.com/ecpartan/soap-server-tr069/pkg/jrpc2"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/mwdto"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
+	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
 	"github.com/fanliao/go-promise"
 	"github.com/julienschmidt/httprouter"
 )
 
 type handlerJrpc2 struct {
-	Cache *repository.Cache
+	Cache     *repository.Cache
+	execTasks *tasker.Tasker
 }
 
-func NewHandler(Cache *repository.Cache) handlers.Handler {
+func NewHandler(Cache *repository.Cache, execTasks *tasker.Tasker) handlers.Handler {
 	return &handlerJrpc2{
-		Cache: Cache,
+		Cache:     Cache,
+		execTasks: execTasks,
 	}
 }
 
 func (h *handlerJrpc2) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, "/front", apperror.Middleware(h.ExecFrontReq))
+	router.HandlerFunc(http.MethodGet, "/frontcli", apperror.Middleware(h.ExecFrontWithoutJRPC2))
 }
 
 // Execute Frontend request
@@ -48,6 +53,7 @@ func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) erro
 	if err != nil {
 		return err
 	}
+
 	srvMethods := jrcp2server.Instance.Server.Server.ServerInfo().Methods
 
 	logger.LogDebug("Methods", srvMethods)
@@ -69,7 +75,7 @@ func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) erro
 						var ret []byte
 						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 						defer cancel()
-						err := jrcp2server.Instance.Server.Client.CallResult(ctx, req.Method, script, &ret)
+						err := jrcp2server.Instance.Server.Client.CallResult(ctx, req.Method, mwdto.Mwdto{script, h.execTasks.ExecTasks}, &ret)
 						return ret, err
 					}
 
@@ -91,6 +97,55 @@ func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) erro
 				}
 			}
 		}
+	}
+
+	return nil
+}
+
+func (h *handlerJrpc2) ExecFrontWithoutJRPC2(w http.ResponseWriter, r *http.Request) error {
+	logger.LogDebug("Enter ExecFrExecFrontWithoutJRPC2ontReq")
+	logger.LogDebug("soapRequestBytes", h.execTasks)
+
+	msg, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	var mp map[string]any
+	err = json.Unmarshal(msg, &mp)
+
+	if err != nil {
+		return err
+	}
+
+	logger.LogDebug("Script", mp)
+
+	if script, ok := mp["Script"].(map[string]any); ok {
+		logger.LogDebug("Script", script)
+
+		task := func() (any, error) {
+			var ret []byte
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{script, h.execTasks.ExecTasks}, &ret)
+			return ret, err
+		}
+
+		f := promise.Start(task).OnSuccess(func(result any) {
+			logger.LogDebug("Success", result)
+		}).OnFailure(func(v any) {
+			logger.LogDebug("Failure", v)
+		})
+		result, err := f.Get()
+
+		if err != nil {
+			logger.LogDebug("Get", err)
+			return err
+		} else {
+			w.Write(result.([]byte))
+		}
+	} else {
+		return apperror.ErrInvalidType
 	}
 
 	return nil

@@ -16,6 +16,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
 	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/tasks"
+	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -23,13 +24,15 @@ type handler struct {
 	mapResponse *devmap.DevMap
 	Cache       *repository.Cache
 	service     *usecase_device.Service
+	execTasks   *tasker.Tasker
 }
 
-func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache, service *usecase_device.Service) handlers.Handler {
+func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache, service *usecase_device.Service, execTasks *tasker.Tasker) handlers.Handler {
 	return &handler{
 		mapResponse: mapResponse,
 		Cache:       Cache,
 		service:     service,
+		execTasks:   execTasks,
 	}
 }
 
@@ -109,7 +112,7 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:Inform").(map[string]any); ok {
 			logger.LogDebug("found Inform")
 			if sn := p.GetXMLString(ret, "DeviceId.SerialNumber"); sn != "" {
-				tasks.AddDevicetoTaskList(sn)
+				h.execTasks.ExecTasks.AddDevicetoTaskList(sn)
 
 				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
 				logger.LogDebug("paramlist", paramlist)
@@ -197,7 +200,7 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 
 	if mv == nil {
 		logger.LogDebug("End session")
-		if tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg) {
+		if tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks) {
 			h.mapResponse.Delete(addr)
 		}
 		return nil
@@ -234,7 +237,7 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 		break
 	}
 	if paramType != soap.Inform {
-		tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg)
+		tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks)
 	}
 
 	return nil

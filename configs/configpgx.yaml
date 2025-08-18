@@ -18,7 +18,7 @@ redis:
   max_active_conns: 10000
 server:
   host: 127.0.0.1
-  port: 8089
+  port: 8088
   cors:
     debug: true
     allowed-methods: ["GET", "POST", "PATCH", "PUT", "OPTIONS", "DELETE"]

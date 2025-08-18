@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	_ "github.com/ecpartan/soap-server-tr069/docs"
@@ -12,6 +13,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/middleware"
 	usecase_service "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/service"
 	"github.com/ecpartan/soap-server-tr069/repository/storage"
+	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
 	"github.com/ecpartan/soap-server-tr069/web"
 
 	"github.com/ecpartan/soap-server-tr069/pkg/metrics"
@@ -37,15 +39,16 @@ type Server struct {
 	httpServer  *http.Server
 	cache       *repository.Cache
 	jrpc2Server *jrpc2.Jrpc2Server
+	ExecTasks   *tasker.Tasker
 }
 
 func (s *Server) Register() {
 	logger.LogDebug("Registering handlers")
 
-	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService)
+	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService, s.ExecTasks)
 	mainHandler.Register(s.router)
 
-	taskHandler := devsoap.NewHandlerCR(s.cache)
+	taskHandler := devsoap.NewHandlerCR(s.cache, s.ExecTasks)
 	taskHandler.Register(s.router)
 
 	treeHandler := devsoap.NewHandlerGetTree(s.cache)
@@ -57,11 +60,14 @@ func (s *Server) Register() {
 	loginHandler := login.NewHandler(s.service.UserService)
 	loginHandler.Register(s.router)
 
-	frontHandler := middleware.NewHandler(s.cache)
+	frontHandler := middleware.NewHandler(s.cache, s.ExecTasks)
 	frontHandler.Register(s.router)
 
 	web.Register()
 }
+
+var once sync.Once
+var Instance *Server
 
 // NewServer construct a new SOAP server
 func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
@@ -84,20 +90,30 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 
 	serviceDevice := usecase_service.NewService(dbstorage.DevStorage, dbstorage.UserStorage)
 
-	return &Server{
-		mapResponse: devmap.NewDevMap(),
-		router:      router,
-		cfg:         cfg,
-		service:     serviceDevice,
-		cache:       cache,
-		jrpc2Server: jrpc2.NewJrpc2Server(),
-	}, nil
+	var once sync.Once
+
+	once.Do(func() {
+		Instance = &Server{
+			mapResponse: devmap.NewDevMap(),
+			router:      router,
+			cfg:         cfg,
+			service:     serviceDevice,
+			cache:       cache,
+			jrpc2Server: jrpc2.NewJrpc2Server(),
+			ExecTasks:   tasker.GetTasker(),
+		}
+	})
+	logger.LogDebug("GetServer", Instance)
+
+	return Instance, nil
 }
 
 func (s *Server) RunHTTPServer(ctx context.Context) error {
 	logger.LogDebug("Start HTTP server on ip ", s.cfg.Server.Host, ":", s.cfg.Server.Port)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.cfg.Server.Host, s.cfg.Server.Port))
+	logger.LogDebug("qqqq", err)
+
 	if err != nil {
 		return err
 	}

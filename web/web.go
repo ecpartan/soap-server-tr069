@@ -196,9 +196,8 @@ func createHelloWorldSession(session rui.Session) rui.SessionContent {
 
 func Register() {
 	go func() {
-		rui.StartApp("localhost:8083", createHelloWorldSession, rui.AppParams{
+		rui.StartApp("localhost:8087", createHelloWorldSession, rui.AppParams{
 			Title: "Hello world",
-			Icon:  "icon.svg",
 		})
 	}()
 }

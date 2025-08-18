@@ -8,12 +8,14 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/ecpartan/soap-server-tr069/internal/config"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/mwdto"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/soap"
-	"github.com/ecpartan/soap-server-tr069/tasks"
+	"github.com/ecpartan/soap-server-tr069/tasks/scripter"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
@@ -22,9 +24,9 @@ const (
 	MethodGetTree   = "GetTree"
 )
 
-func Get(ctx context.Context, req map[string]any) ([]byte, error) {
+func Get(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 
-	if sn, ok := req["Serial"].(string); !ok {
+	if sn, ok := dto.Reqw["Serial"].(string); !ok {
 		return nil, ErrNotfoundSerial
 	} else {
 		if sn == "" {
@@ -73,11 +75,11 @@ func watchChannel(sn string, ch <-chan *response.RetScriptTask, wg *sync.WaitGro
 	}
 }
 
-func AddScriptTask(ctx context.Context, req map[string]any) ([]byte, error) {
+func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 
-	logger.LogDebug("AddScriptTask", req)
+	logger.LogDebug("AddScriptTask", dto.Reqw)
 
-	sn := p.GetSnScript(req)
+	sn := p.GetSnScript(dto.Reqw)
 
 	logger.LogDebug("sn", sn)
 
@@ -85,13 +87,23 @@ func AddScriptTask(ctx context.Context, req map[string]any) ([]byte, error) {
 		return nil, ErrNotfoundSerial
 	}
 
-	err := tasks.AddToScripter(sn, req)
+	err := scripter.AddToScripter(sn, dto.Reqw)
 	if err != nil {
 		return nil, err
 	}
 
-	tree := repository.GetCache().Get(sn)
+	c := repository.GetCache()
+	if c == nil {
+		cfg := config.GetConfig()
 
+		c = repository.NewCache(context.Background(), cfg)
+	}
+
+	if c == nil {
+		return nil, ErrNotfoundTree
+	}
+
+	tree := c.Get(sn)
 	if tree == nil {
 		logger.LogDebug("mp is nil")
 		return nil, ErrNotfoundTree
@@ -105,6 +117,8 @@ func AddScriptTask(ctx context.Context, req map[string]any) ([]byte, error) {
 		_, err := dr.Execute()
 
 		if err != nil {
+			logger.LogDebug("AddScriptTask", err)
+
 			return nil, NewAppError("500", err.Error())
 		}
 	} else {

@@ -5,25 +5,27 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"reflect"
 
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers"
-	"github.com/ecpartan/soap-server-tr069/tasks"
+	"github.com/ecpartan/soap-server-tr069/tasks/scripter"
+	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
 	"github.com/julienschmidt/httprouter"
 	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
 type handlerCR struct {
-	Cache *repository.Cache
+	Cache     *repository.Cache
+	execTasks *tasker.Tasker
 }
 
-func NewHandlerCR(Cache *repository.Cache) handlers.Handler {
+func NewHandlerCR(Cache *repository.Cache, execTasks *tasker.Tasker) handlers.Handler {
 	return &handlerCR{
-		Cache: Cache,
+		Cache:     Cache,
+		execTasks: execTasks,
 	}
 }
 
@@ -31,6 +33,7 @@ func (h *handlerCR) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, "/addtask", apperror.Middleware(h.PerformConReq))
 }
 
+/*
 func ExecuteCR(bytes []byte, cache *repository.Cache) error {
 
 	var getScript map[string]any
@@ -78,7 +81,7 @@ func ExecuteCR(bytes []byte, cache *repository.Cache) error {
 	}
 
 	return nil
-}
+}*/
 
 // Connect to the server
 // @Summary Perfform a CR
@@ -106,7 +109,7 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 	if sn == "" {
 		return fmt.Errorf("failed SN in CR: %v", err)
 	}
-	err = tasks.AddToScripter(sn, getScript)
+	err = scripter.AddToScripter(sn, getScript)
 
 	if err != nil {
 		return fmt.Errorf("failed add task CR: %v", err)
