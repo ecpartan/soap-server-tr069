@@ -44,6 +44,25 @@ func GetXMLValue(xmlMap any, key string) string {
 	return ""
 }
 
+func GetXMLType(xmlMap any, key string) string {
+	base := GetXML(xmlMap, key)
+	logger.LogDebug("GetXMLType", base)
+	if val, ok := getXML(base, "Type").(string); ok {
+		return val
+	}
+	return ""
+}
+
+func GetXMLMap(xmlMap any, key string) map[string]any {
+	var ret map[string]any
+
+	mp := GetXML(xmlMap, key)
+	if mp, ok := mp.(map[string]any); ok {
+		ret = mp
+	}
+	return ret
+}
+
 func ClearCacheNodes(sn string, lst []string) {
 	if len(lst) == 0 {
 		return

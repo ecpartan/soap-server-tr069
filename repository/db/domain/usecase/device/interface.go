@@ -27,6 +27,7 @@ type Repository interface {
 type UseCase interface {
 	GetDevice(id utils.ID) (*entity.Device, error)
 	GetOneBySn(sn string) (*entity.Device, error)
+	GetIPandPortByID(id utils.ID) (string, int, error)
 	GetAll(limit, offset int) []*entity.Device
 	CreateDevice(view entity.DeviceView) (utils.ID, error)
 	UpdateDevice(device *entity.Device) error

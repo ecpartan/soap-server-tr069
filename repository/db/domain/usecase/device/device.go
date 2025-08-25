@@ -1,6 +1,9 @@
 package usecase_device
 
 import (
+	"net"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
@@ -40,6 +43,36 @@ func (s *Service) GetOneBySn(sn string) (*entity.Device, error) {
 	}
 
 	return dev, nil
+}
+
+func (s *Service) GetIPandPortByID(id utils.ID) (string, int, error) {
+	dev, err := s.repo.Get(id)
+	if dev == nil {
+		return "", 0, entity.ErrNotFound
+	}
+
+	if err != nil {
+		return "", 0, err
+	}
+
+	crurl := dev.CrURL
+	parsedURL, err := url.Parse(crurl)
+	if err != nil {
+		return "", 0, entity.ErrCRULR
+	}
+
+	ip, portstr, err := net.SplitHostPort(parsedURL.Host)
+	if err != nil {
+		return "", 0, entity.ErrCRULR
+	}
+
+	port, err := strconv.Atoi(portstr)
+
+	if err != nil {
+		return "", 0, entity.ErrCRULR
+	}
+
+	return ip, port, nil
 }
 
 func (s *Service) GetAll(limit, offset int) []*entity.Device {

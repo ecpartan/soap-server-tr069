@@ -70,7 +70,7 @@ func watchChannel(sn string, ch <-chan *response.RetScriptTask, wg *sync.WaitGro
 	logger.LogDebug("Watching channel: ", sn)
 
 	for channelValue := range ch {
-		fmt.Printf("Channel '%s' with value: '%s'\n", sn, channelValue.Code)
+		logger.LogDebug("Channel '%s' with value: '%s'\n", sn, channelValue.Code)
 		response.EndTaskResponse[sn] = *channelValue
 	}
 }
