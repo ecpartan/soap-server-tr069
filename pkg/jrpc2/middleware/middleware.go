@@ -127,7 +127,7 @@ func (h *handlerJrpc2) ExecFrontWithoutJRPC2(w http.ResponseWriter, r *http.Requ
 			var ret []byte
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{script, h.execTasks.ExecTasks}, &ret)
+			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
 			return ret, err
 		}
 

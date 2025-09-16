@@ -29,7 +29,7 @@ type UseCase interface {
 	GetUser(id utils.ID) (*entity.User, error)
 	SearchUsers(query string) ([]*entity.User, error)
 	GetAll() []*entity.User
-	CreateUser(view entity.CreateUser) (utils.ID, error)
+	CreateUser(view entity.UserView) (utils.ID, error)
 	UpdateUser(e *entity.User) error
 	DeleteUser(id utils.ID) error
 }

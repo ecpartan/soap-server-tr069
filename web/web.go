@@ -1,11 +1,9 @@
 package web
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/anoshenko/rui"
@@ -157,47 +155,14 @@ type webSession struct {
 	pages    []webPage
 }
 
-func mapToString(m map[string]any) string {
-	var b bytes.Buffer
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys) // Sort keys for consistent string representation
-
-	b.WriteString("{")
-	for i, k := range keys {
-		v := m[k]
-		if i > 0 {
-			b.WriteString(", ")
-		}
-		// Handle different types within 'any'
-		switch val := v.(type) {
-		case string:
-			fmt.Fprintf(&b, "\"%s\":\"%s\"", k, val)
-		case int, int8, int16, int32, int64:
-			fmt.Fprintf(&b, "\"%s\":%d", k, val)
-		case float32, float64:
-			fmt.Fprintf(&b, "\"%s\":%f", k, val)
-		case bool:
-			fmt.Fprintf(&b, "\"%s\":%t", k, val)
-		default:
-			// Fallback for other types, using default string representation
-			fmt.Fprintf(&b, "\"%s\":%v", k, val)
-		}
-	}
-	b.WriteString("}")
-	return b.String()
-}
-
 func createHelloWorldSession(session rui.Session) rui.SessionContent {
 	return new(webSession)
 }
 
-func Register() {
+func Register(addr string, port int) {
 	go func() {
-		rui.StartApp("localhost:8087", createHelloWorldSession, rui.AppParams{
-			Title: "Hello world",
+		rui.StartApp(fmt.Sprintf("%s:%d", addr, port), createHelloWorldSession, rui.AppParams{
+			Title: "SOAP SERVER TR069",
 		})
 	}()
 }

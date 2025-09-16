@@ -1,14 +1,15 @@
 package tasks
 
 import (
-	"fmt"
+	"encoding/json"
+	"sort"
 	"sync"
 
-	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
+	"github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/repository/storage"
 	"github.com/ecpartan/soap-server-tr069/tasks/task"
 	"github.com/ecpartan/soap-server-tr069/tasks/taskexec"
-
-	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
 type Scripter struct {
@@ -17,62 +18,54 @@ type Scripter struct {
 	mu              sync.Mutex
 }
 
-func (s *Scripter) AddTask(task task.Task) {
-	s.mu.Lock()
-	s.tasks = append(s.tasks, task)
-	s.mu.Unlock()
-}
-
-func (s *Scripter) RunTasks() {
-	for _, task := range s.tasks {
-		s.responsechannel <- task
-	}
-}
-
-func InitTasks() *taskexec.TaskExec {
+func InitTasks(s *storage.Storage) *taskexec.TaskExec {
 	stasks := make(map[string][]task.Task)
 	lst := make(map[string][]task.Task)
+
 	exec := &taskexec.TaskExec{
 		ScripterTasks: stasks,
 		Lst: taskexec.ListTasks{
 			TaskList: lst,
 		},
 	}
-	paramlistGet := taskmodel.GetParamValTask{}
-	paramlistGet.Name = append(paramlistGet.Name, "InternetGatewayDevice.WANDevice.")
+	tskStatorage := s.TasksStorage
 
-	paramsGetName := taskmodel.GetParamNamesTask{
-		ParameterPath: "InternetGatewayDevice.WANDevice.",
-		NextLevel:     0,
-	}
-	paramGetAttr := taskmodel.GetParamAttrTask{
-		Name: []string{"InternetGatewayDevice.WANDevice."},
-	}
-	exec.Lst.TaskList["94DE80BF38B2"] = []task.Task{
-		{
-			ID:        utils.NewID(),
-			Action:    task.GetParameterValues,
-			Params:    paramlistGet,
-			Once:      true,
-			EventCode: 1,
-		},
-		{
-			ID:        utils.NewID(),
-			Action:    task.GetParameterAttributes,
-			Params:    paramGetAttr,
-			Once:      true,
-			EventCode: 1,
-		},
-		{
-			ID:        utils.NewID(),
-			Action:    task.GetParameterNames,
-			Params:    paramsGetName,
-			Once:      true,
-			EventCode: 1,
-		},
+	lsts, err := tskStatorage.ListWithOP()
+	if err != nil {
+		return nil
 	}
 
-	fmt.Println(exec.ScripterTasks)
+	for _, tsk := range lsts {
+
+		mp := map[string]any{}
+		if err := json.Unmarshal([]byte(tsk.Body), &mp); err != nil {
+			logger.LogDebug("Err", err)
+		}
+		scriptList := parsemap.GetXMLMap(mp, "Script")
+		logger.LogDebug("lst", scriptList)
+		sn := parsemap.GetSnScript(scriptList)
+
+		keys := make([]string, 0, len(scriptList))
+		for k := range scriptList {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			if curr_task, ok := scriptList[k]; ok {
+				if addtask, ok := curr_task.(map[string]any); ok {
+					find_task := task.ParseTask(addtask, tsk)
+					logger.LogDebug("Add task", find_task)
+					if find_task == nil {
+						continue
+					}
+					exec.Lst.TaskList[sn] = append(exec.Lst.TaskList[sn], *find_task)
+				}
+			}
+		}
+	}
+
+	logger.LogDebug("init list", exec.Lst)
 
 	return exec
 }

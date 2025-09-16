@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"fmt"
+
+	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
 	"github.com/ecpartan/soap-server-tr069/utils"
 	"github.com/jmoiron/sqlx"
@@ -12,7 +15,6 @@ type DevStorage struct {
 }
 
 func NewDevStorage(db *sqlx.DB) *DevStorage {
-
 	return &DevStorage{db: db}
 }
 
@@ -40,32 +42,73 @@ func (s *DevStorage) GetAll(limit, offset int) []*entity.Device {
 	return ret
 }
 
-func (s *DevStorage) Search(query string) (*entity.Device, error) {
-	ret := entity.Device{}
+func (s *DevStorage) Search(query string) ([]*entity.Device, error) {
+	var ret []*entity.Device
+	var t entity.Device
 
-	err := s.db.Get(&ret, "SELECT * FROM device WHERE sn = $1", query)
+	err := s.db.Get(&t, s.db.Rebind("SELECT * FROM device WHERE sn=?"), query)
 
-	if err != nil {
-		return nil, err
-	}
+	logger.LogDebug("CreateOp", err, t)
 
-	return &ret, nil
+	ret = append(ret, &t)
+
+	/*
+		stmt, err := s.db.Prepare("SELECT * FROM device WHERE sn LIKE ?")
+
+		if err != nil {
+			return nil, err
+		}
+		defer stmt.Close()
+
+		var t []*entity.Device
+		rows, err := stmt.Query("%" + query + "%")
+
+		for rows.Next() {
+			var cur entity.Device
+			err = rows.Scan(&cur.ID, &cur.SerialNumber, &cur.Mac, &cur.Username, &cur.Password, &cur.CrUsername, &cur.CrPassword, &cur.CrURL, &cur.Status, &cur.Uptime, &cur.SwVersion, &cur.HwVersion, &cur.Model, &cur.Manufacturer, &cur.OUI, &cur.Datamodel, &cur.ProfileId)
+			if err != nil {
+				return nil, err
+			}
+			t = append(t, &cur)
+		}
+
+		if len(t) == 0 {
+			return nil, fmt.Errorf("not found")
+		}
+	*/
+	return ret, nil
 }
 
 func (s *DevStorage) List() ([]*entity.Device, error) {
-	ret := []*entity.Device{}
-	err := s.db.Select(&ret, "SELECT * FROM device")
+	rows, err := s.db.Query("SELECT * FROM device")
+
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	return ret, nil
+	var t []*entity.Device
+
+	for rows.Next() {
+		var cur entity.Device
+		err = rows.Scan(&cur.ID, &cur.SerialNumber, &cur.Mac, &cur.Username, &cur.Password, &cur.CrUsername, &cur.CrPassword, &cur.CrURL, &cur.Status, &cur.Uptime, &cur.SwVersion, &cur.HwVersion, &cur.Model, &cur.Manufacturer, &cur.OUI, &cur.Datamodel, &cur.ProfileId)
+		if err != nil {
+			return nil, err
+		}
+		t = append(t, &cur)
+	}
+
+	if len(t) == 0 {
+		return nil, fmt.Errorf("not found")
+	}
+
+	return t, nil
 }
 
 func (s *DevStorage) Create(e *entity.Device) (utils.ID, error) {
 
 	err := s.db.Get(e, "INSERT INTO device (id, sn, mac, username, password, cr_username, cr_password, cr_url, status, uptime, sw_version, hw_version, model, manufacturer, oui, datamodel, profile_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		e.ID, e.SerialNumber, e.Mac, e.Username, e.Password)
+		e.ID, e.SerialNumber, e.Mac, e.Username, e.Password, e.CrUsername, e.CrPassword, e.CrURL, e.Status, e.Uptime, e.SwVersion, e.HwVersion, e.Model, e.Manufacturer, e.OUI, e.Datamodel, e.ProfileId)
 
 	if err != nil {
 		return utils.ID{}, err

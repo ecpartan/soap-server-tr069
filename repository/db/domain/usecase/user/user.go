@@ -52,7 +52,7 @@ func (s *Service) GetAll() []*entity.User {
 	return all
 }
 
-func (s *Service) CreateUser(view entity.CreateUser) (utils.ID, error) {
+func (s *Service) CreateUser(view entity.UserView) (utils.ID, error) {
 	b, err := entity.NewUser(view)
 	if err != nil {
 		return utils.NewID(), err

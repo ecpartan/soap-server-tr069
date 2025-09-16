@@ -72,7 +72,6 @@ func NewDevice(view DeviceView) (*Device, error) {
 		Password:     "",
 		Status:       "off",
 		Uptime:       0,
-		ProfileId:    utils.NewID(),
 	}
 	err := b.Validate()
 	if err != nil {

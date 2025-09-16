@@ -19,6 +19,7 @@ redis:
 server:
   host: 127.0.0.1
   port: 8088
+  port_web: 8087
   cors:
     debug: true
     allowed-methods: ["GET", "POST", "PATCH", "PUT", "OPTIONS", "DELETE"]

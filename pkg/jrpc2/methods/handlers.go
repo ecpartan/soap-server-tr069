@@ -87,7 +87,7 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 		return nil, ErrNotfoundSerial
 	}
 
-	err := scripter.AddToScripter(sn, dto.Reqw)
+	err := scripter.AddToScripter(sn, dto.Reqw, nil)
 	if err != nil {
 		return nil, err
 	}

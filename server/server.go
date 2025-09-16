@@ -48,7 +48,7 @@ func (s *Server) Register() {
 	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService, s.ExecTasks)
 	mainHandler.Register(s.router)
 
-	taskHandler := devsoap.NewHandlerCR(s.cache, s.ExecTasks)
+	taskHandler := devsoap.NewHandlerCR(s.cache, s.ExecTasks, s.service.TasksService, s.service.DeviceService)
 	taskHandler.Register(s.router)
 
 	treeHandler := devsoap.NewHandlerGetTree(s.cache)
@@ -62,8 +62,6 @@ func (s *Server) Register() {
 
 	frontHandler := middleware.NewHandler(s.cache, s.ExecTasks)
 	frontHandler.Register(s.router)
-
-	web.Register()
 }
 
 var once sync.Once
@@ -81,6 +79,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 
 	metHandler := metrics.Handler{}
 	metHandler.Register(router)
+	web.Register(cfg.Server.Host, cfg.Server.PortWeb)
 
 	dbstorage, err := storage.NewStorage(&cfg.DatabaseConf)
 
@@ -88,7 +87,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	serviceDevice := usecase_service.NewService(dbstorage.DevStorage, dbstorage.UserStorage)
+	serviceDevice := usecase_service.NewService(dbstorage)
 
 	var once sync.Once
 
@@ -100,7 +99,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 			service:     serviceDevice,
 			cache:       cache,
 			jrpc2Server: jrpc2.NewJrpc2Server(),
-			ExecTasks:   tasker.GetTasker(),
+			ExecTasks:   tasker.InitTasker(dbstorage),
 		}
 	})
 	logger.LogDebug("GetServer", Instance)

@@ -8,7 +8,7 @@ import (
 // Reader interface
 type Reader interface {
 	Get(id utils.ID) (*entity.Device, error)
-	Search(query string) (*entity.Device, error)
+	Search(query string) ([]*entity.Device, error)
 	List() ([]*entity.Device, error)
 }
 
@@ -31,5 +31,6 @@ type UseCase interface {
 	GetAll(limit, offset int) []*entity.Device
 	CreateDevice(view entity.DeviceView) (utils.ID, error)
 	UpdateDevice(device *entity.Device) error
+	UpdateDeviceProfileIDbySN(sn string, profileID utils.ID) error
 	DeleteDevice(id utils.ID) error
 }

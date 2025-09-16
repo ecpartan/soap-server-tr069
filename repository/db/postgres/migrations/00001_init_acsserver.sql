@@ -59,8 +59,7 @@ CREATE TABLE IF NOT EXISTS firmware (
     size BIGINT NOT NULL,
     version VARCHAR(50),
     created_at    TIMESTAMPTZ NOT NULL,
-    updated_at    TIMESTAMPTZ,
-    user_id UUID REFERENCES users(id)
+    updated_at    TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS config (
@@ -72,6 +71,7 @@ CREATE TABLE IF NOT EXISTS config (
     created_at    TIMESTAMPTZ NOT NULL,
     updated_at    TIMESTAMPTZ
 );
+
 
 CREATE TABLE IF NOT EXISTS profile (
     id UUID PRIMARY KEY,
@@ -114,32 +114,24 @@ CREATE TABLE IF NOT EXISTS device (
 CREATE TABLE IF NOT EXISTS task_op (
     id UUID PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    body jsonb
+    body VARCHAR(2000)
 );
 
 CREATE TABLE IF NOT EXISTS task (
     id UUID PRIMARY KEY,
     type VARCHAR(50) NOT NULL,
-    last_status VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
     event_code INTEGER NOT NULL,
     once BOOLEAN NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL,
+    updated_at    TIMESTAMPTZ,
+    result  VARCHAR(50) NOT NULL,
     task_op_id UUID REFERENCES task_op(id),
     device_id UUID REFERENCES device(id)
 );
 
-CREATE TABLE IF NOT EXISTS task_result (
-    id UUID PRIMARY KEY,
-    status VARCHAR(50) NOT NULL,
-    created_at    TIMESTAMPTZ NOT NULL,
-    updated_at    TIMESTAMPTZ,
-    result jsonb,
-    task_id UUID REFERENCES task(id)
-);
-
-
 
 -- DATA --
-
 
 INSERT INTO user_role (id, name, description)
 VALUES (gen_random_uuid(), 'admin', 'admin');
@@ -150,8 +142,8 @@ SELECT gen_random_uuid(), 'admin', id FROM user_role WHERE name = 'admin';
 INSERT INTO users (id, username, password, email, group_id)
 SELECT gen_random_uuid(), 'admin', 'admin', 'admin@admin.com', id FROM user_group WHERE name = 'admin';
 
-INSERT INTO firmware (id, name, path, size, version, created_at, updated_at, user_id)
-SELECT gen_random_uuid(), 'firmware', 'firmware', 100, '1.0.0', NOW(), NOW(), id FROM users WHERE username = 'admin';
+INSERT INTO firmware (id, name, path, size, version, created_at, updated_at)
+SELECT gen_random_uuid(), 'firmware', 'firmware', 100, '1.0.0', NOW(), NOW();
 
 INSERT INTO config (id, name, path, size, version, created_at, updated_at)
 SELECT gen_random_uuid(), 'config', 'config', 100, '1.0.0', NOW(), NOW();
@@ -162,20 +154,31 @@ VALUES (gen_random_uuid(), 'default', 'Default profile', (SELECT id FROM firmwar
 INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, cr_url, uptime, status, datamodel, username, password, cr_username, cr_password, mac, created_at, updated_at, profile_id)
 SELECT gen_random_uuid(), '94DE80BF38B2', 'D-LINK', 'DIR-825', '94DE80', 'develop', 'DebugOnHost', 'http://127.0.0.1:8999/', 0, 'off', '98', '', '', '', '', '94:DE:80:BF:38:B2', NOW(), NOW(), id FROM profile WHERE name = 'default';
 
+
 INSERT INTO task_op (id, name, body)
-VALUES (gen_random_uuid(), 'Script', '{"Script":{"1":{"AddObject":{"Name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection."}},"2":{"SetParameterValues":[{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.SubnetMask","value":"255.255.255.240","type":"xsd:string"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.Enable","value":"1","type":"xsd:boolean"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.AddressingType","value":"Static","type":"xsd:string"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.ExternalIPAddress","value":"192.168.152.31","type":"xsd:string"}]},"Serial":"94DE80BF38B2"}}');
+VALUES (gen_random_uuid(), 'Script1', '{"Script":{"1":{"GetParameterValues":{"Name":["InternetGatewayDevice.WANDevice."]}},"Serial":"94DE80BF38B2"}}');
+INSERT INTO task_op (id, name, body)
+VALUES (gen_random_uuid(), 'Script2', '{"Script":{"1":{"GetParameterAttributes":{"Name":["InternetGatewayDevice.WANDevice."]}},"Serial":"94DE80BF38B2"}}');
+INSERT INTO task_op (id, name, body)
+VALUES (gen_random_uuid(), 'Script3', '{"Script":{"1":{"GetParameterNames":{"Name":"InternetGatewayDevice.WANDevice.","NextLevel":0}},"Serial":"94DE80BF38B2"}}');
 
-INSERT INTO task (id, type, last_status, event_code, once, task_op_id, device_id)
-VALUES (gen_random_uuid(), 'Script', 'success', 6, false, (SELECT id FROM task_op WHERE name = 'Script' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
+INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
+VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script1' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
 
-INSERT INTO task_result (id, status, created_at, updated_at, result, task_id)
-SELECT gen_random_uuid(), 'success', NOW(), NOW(), '{"result":"success"}', id FROM task WHERE type = 'Script';
+INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
+VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script2' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
+
+INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
+VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script3' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
+
+
+
 
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 
-DROP table IF EXISTS users, user_role, user_group, task_op, task_result, task, profile, firmware, device, config;
+DROP table IF EXISTS users, user_role, user_group, task_op, task, profile, firmware, device, config;
 
 -- +goose StatementEnd

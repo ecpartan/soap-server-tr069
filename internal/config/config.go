@@ -14,6 +14,7 @@ type Config struct {
 	Server struct {
 		Host         string `yaml:"host" json:"host" env:"SERVER_HOST"`
 		Port         int    `yaml:"port" json:"port" env:"SERVER_PORT"`
+		PortWeb      int    `yaml:"port_web" json:"port_web" env:"SERVER_PORT_WEB"`
 		ReadTimeout  int    `yaml:"read_timeout" json:"read_timeout" env:"SERVER_READ_TIMEOUT"`
 		WriteTimeout int    `yaml:"write_timeout" json:"write_timeout" env:"SERVER_WRITE_TIMEOUT"`
 		IdleTimeout  int    `yaml:"idle_timeout" json:"idle_timeout" env:"SERVER_IDLE_TIMEOUT"`

@@ -36,8 +36,8 @@ func (e *TaskExec) DeleteTaskByID(serial string, id utils.ID) {
 func (e *TaskExec) GetListTasksBySerial(serial, host string) []task.Task {
 	logger.LogDebug("Lst", e.Lst.TaskList)
 	e.Lst.mu.Lock()
-	defer e.Lst.mu.Unlock()
 	ret_list := e.Lst.TaskList[serial]
+	e.Lst.mu.Unlock()
 
 	if len(ret_list) == 0 {
 		scripterTask := e.findParserTasks(serial)

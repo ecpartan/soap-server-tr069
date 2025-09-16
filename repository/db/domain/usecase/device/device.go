@@ -33,8 +33,8 @@ func (s *Service) GetDevice(id utils.ID) (*entity.Device, error) {
 }
 
 func (s *Service) GetOneBySn(sn string) (*entity.Device, error) {
-	dev, err := s.repo.Search(sn)
-	if dev == nil {
+	devs, err := s.repo.Search(sn)
+	if devs == nil {
 		return nil, entity.ErrNotFound
 	}
 
@@ -42,7 +42,21 @@ func (s *Service) GetOneBySn(sn string) (*entity.Device, error) {
 		return nil, err
 	}
 
-	return dev, nil
+	return devs[0], nil
+}
+
+func (s *Service) GetDeviceIDBySn(sn string) (utils.ID, error) {
+	var id utils.ID
+	devs, err := s.repo.Search(sn)
+	if devs == nil {
+		return id, entity.ErrNotFound
+	}
+
+	if err != nil {
+		return id, err
+	}
+
+	return devs[0].ID, nil
 }
 
 func (s *Service) GetIPandPortByID(id utils.ID) (string, int, error) {
@@ -109,5 +123,17 @@ func (s *Service) UpdateDevice(d *entity.Device) error {
 		return err
 	}
 	d.Updated_at = time.Now()
+	return s.repo.Update(d)
+}
+
+func (s *Service) UpdateDeviceProfileIDbySN(sn string, profileID utils.ID) error {
+	devs, err := s.repo.Search(sn)
+	if err != nil {
+		return err
+	}
+	d := devs[0]
+	d.ProfileId = profileID
+	d.Updated_at = time.Now()
+
 	return s.repo.Update(d)
 }

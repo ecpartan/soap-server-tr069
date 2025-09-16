@@ -14,8 +14,10 @@ import (
 )
 
 type Storage struct {
-	DevStorage  *DevStorage
-	UserStorage *UserStorage
+	DevStorage     *DevStorage
+	UserStorage    *UserStorage
+	ProfileStorage *ProfileStorage
+	TasksStorage   *TasksStorage
 }
 
 func NewStorage(cfg *dbconf.DatabaseConf) (*Storage, error) {
@@ -24,7 +26,7 @@ func NewStorage(cfg *dbconf.DatabaseConf) (*Storage, error) {
 		return nil, err
 	}
 
-	return &Storage{DevStorage: NewDevStorage(db), UserStorage: NewUserStorage(db)}, nil
+	return &Storage{DevStorage: NewDevStorage(db), UserStorage: NewUserStorage(db), ProfileStorage: NewProfileStorage(db), TasksStorage: NewTaskstorage(db)}, nil
 }
 
 func NewDB(ctx context.Context, cfg *dbconf.DatabaseConf) (*sqlx.DB, error) {
@@ -32,6 +34,7 @@ func NewDB(ctx context.Context, cfg *dbconf.DatabaseConf) (*sqlx.DB, error) {
 	switch cfg.Driver {
 	case "pgx":
 		if db, err := postgres.NewClient(ctx, cfg); err != nil {
+			logger.LogDebug("Error connecting to database", err)
 			return nil, err
 		} else {
 			return db, nil

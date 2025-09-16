@@ -58,7 +58,7 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 	logger.LogDebug("PrepareListTask", rp.RespList)
 	logger.LogDebug("PrepareListTask", t)
 
-	if rp.ResplistIsEmpty() {
+	if len(rp.RespList) == 0 {
 		return t
 	}
 
@@ -133,14 +133,17 @@ func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap
 	wg.Add(1)
 
 	if rp.RespChan == nil {
-		rp.RespChan = make(chan devmodel.SoapResponse, 1)
+		rp.RespChan = make(chan devmodel.SoapResponse)
 	} else {
+		close(rp.RespChan)
+		rp.RespChan = make(chan devmodel.SoapResponse)
 		logger.LogDebug("Channel is not empty")
 	}
 
 	t = PrepareListTask(t, rp)
-
+	logger.LogDebug("executeResponsetask2", t)
 	go func(t task.Task) {
+		logger.LogDebug("executeResponsetask2", t)
 		task_func(w, t.Params, sp)
 
 		wg.Done()

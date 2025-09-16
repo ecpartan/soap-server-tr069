@@ -10,25 +10,29 @@ type User struct {
 	GroupId  string   `json:"group_id"`
 }
 
-type CreateUser struct {
+type UserView struct {
 	Username string
 	Password string
 	Email    string
 }
 
+func NewUserView(username, password, email string) (*UserView, error) {
+	return &UserView{Username: username, Password: password, Email: email}, nil
+}
+
 type UserRole struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          utils.ID `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
 }
 
 type UserGroup struct {
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	Roleid string `json:"role_id"`
+	ID     utils.ID `json:"id"`
+	Name   string   `json:"name"`
+	Roleid utils.ID `json:"role_id"`
 }
 
-func NewUser(view CreateUser) (*User, error) {
+func NewUser(view UserView) (*User, error) {
 	return &User{ID: utils.NewID(), Username: view.Username, Password: view.Password, Email: view.Email}, nil
 }
 

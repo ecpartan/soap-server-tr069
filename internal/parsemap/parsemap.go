@@ -41,6 +41,7 @@ func GetXMLValue(xmlMap any, key string) string {
 	if val, ok := getXML(base, "Value").(string); ok {
 		return val
 	}
+
 	return ""
 }
 
