@@ -18,7 +18,7 @@ redis:
   max_active_conns: 10000
 server:
   host: 127.0.0.1
-  port: 8089
+  port: 8080
   port_web: 8087
   cors:
     debug: true

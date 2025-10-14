@@ -37,7 +37,6 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return nil
 		}
-
 		ss := RunServer{s: s}
 
 		cmd.SetContext(context.WithValue(cmd.Context(), "server", &ss))

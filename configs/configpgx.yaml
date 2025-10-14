@@ -3,22 +3,21 @@ app:
 database:
   host: 127.0.0.1
   port: 5432
-  username: admin
-  password: admin
+  username: postgres
+  password: postgres
   database: acsserver
   driver: pgx
 redis:
   host: localhost
   port: 6379
-  password:
   db: 0
   ttl: 3600
   min_idle_conns: 10
   max_idle_conns: 100
   max_active_conns: 10000
 server:
-  host: 127.0.0.1
-  port: 8088
+  host: 0.0.0.0
+  port: 8080
   port_web: 8087
   cors:
     debug: true

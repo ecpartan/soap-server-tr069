@@ -2,7 +2,7 @@ FROM golang:latest
 
 RUN mkdir /app
 ADD . /app/
-WORKDIR /app/cmd/
+WORKDIR /app/
 RUN go build -o main .
 WORKDIR /app/
-CMD ["/app/cmd/main"]
+CMD ["/app/main", "start"]

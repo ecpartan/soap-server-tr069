@@ -3,29 +3,28 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"os"
 
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/repository/db/config"
 	"github.com/ecpartan/soap-server-tr069/repository/db/postgres/migrations"
 	"github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 )
 
 func GetURLDB(cfg *config.DatabaseConf) string {
-	return fmt.Sprintf(
-		"postgresql://%s:%s@%s:%d/%s",
-		cfg.UserName,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Database,
-	)
+	var host string
+	if host = os.Getenv("DATABASE_HOST"); host == "" {
+		host = cfg.Host
+	}
+	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable", cfg.UserName, cfg.Password, host, cfg.Port, cfg.Database)
 }
 
 func GetURLPg(cfg *config.DatabaseConf) string {
 	return fmt.Sprintf(
-		"postgresql://%s:%s@%s:%d",
+		"postgres://%s:%s@%s:%d",
 		cfg.UserName,
 		cfg.Password,
 		cfg.Host,
@@ -34,7 +33,9 @@ func GetURLPg(cfg *config.DatabaseConf) string {
 }
 
 func checkDB(cfg *config.DatabaseConf) bool {
-	conninfo := "user=" + cfg.UserName + " password=" + cfg.Password + " host=" + cfg.Host + " sslmode=disable database=postgres"
+	logger.LogDebug("checkDB", cfg)
+
+	conninfo := GetURLDB(cfg)
 
 	db, err := sqlx.Open("postgres", conninfo)
 	if err != nil {
@@ -43,7 +44,10 @@ func checkDB(cfg *config.DatabaseConf) bool {
 
 	defer db.Close()
 	sqlQuery := "SELECT 1 FROM pg_database WHERE datname = '" + cfg.Database + "'"
+
 	rows, err := db.Query(sqlQuery)
+	logger.LogDebug("checkDB", rows, err)
+
 	if err != nil {
 		return false
 	}
@@ -53,15 +57,19 @@ func checkDB(cfg *config.DatabaseConf) bool {
 }
 
 func addDB(cfg *config.DatabaseConf) {
-	conninfo := "user=" + cfg.UserName + " password=" + cfg.Password + " host=" + cfg.Host + " sslmode=disable database=postgres"
+
+	conninfo := GetURLDB(cfg)
 	db, err := sqlx.Open("postgres", conninfo)
 	if err != nil {
+		logger.LogDebug("NewDB", err)
 		return
 	}
 
 	defer db.Close()
+
 	sqlQuery := "CREATE DATABASE " + cfg.Database
 	ret, err := db.Exec(sqlQuery)
+
 	logger.LogDebug("NewDB", ret, err)
 }
 
@@ -74,6 +82,8 @@ func NewClient(ctx context.Context, cfg *config.DatabaseConf) (*sqlx.DB, error) 
 
 	addDn := GetURLDB(cfg)
 	logger.LogDebug("NewCli", addDn)
+	//db, err := sqlx.Connect("postgres", "user=postgres password=postgres host=postgresdb port=5432 dbname=acsserver sslmode=disable")
+
 	db, err := sqlx.Connect("postgres", addDn)
 
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/ecpartan/soap-server-tr069/internal/config"
@@ -23,9 +24,14 @@ var c *Cache
 func NewCache(ctx context.Context, cfg *config.Config) *Cache {
 
 	once := &sync.Once{}
+
 	once.Do(func() {
+		var addr string
+		if addr = os.Getenv("REDIS_URL"); addr == "" {
+			addr = fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port)
+		}
 		redisClient := redis.NewClient(&redis.Options{
-			Addr:         fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
+			Addr:         addr,
 			Password:     cfg.Redis.Password,
 			DB:           cfg.Redis.DB,
 			PoolSize:     cfg.Redis.PoolSize,
@@ -39,6 +45,10 @@ func NewCache(ctx context.Context, cfg *config.Config) *Cache {
 
 func GetCache() *Cache {
 	return c
+}
+
+func GetCacheConnect(ctx context.Context, cfg *config.Config) *Cache {
+	return NewCache(ctx, cfg)
 }
 
 func (c *Cache) Get(key string) map[string]any {
@@ -61,6 +71,6 @@ func (c *Cache) Set(key string, value any) {
 	defer c.Unlock()
 	err := c.c.Put(key, ret)
 	if err != nil {
-		logger.LogDebug("Error getting value from cache: %v", err)
+		logger.LogDebug("Error setting value from cache: %v", err)
 	}
 }

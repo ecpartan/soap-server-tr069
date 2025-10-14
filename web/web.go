@@ -161,6 +161,7 @@ func createHelloWorldSession(session rui.Session) rui.SessionContent {
 
 func Register(addr string, port int) {
 	go func() {
+		logger.LogDebug("Start web server ", fmt.Sprintf("%s:%d", addr, port))
 		rui.StartApp(fmt.Sprintf("%s:%d", addr, port), createHelloWorldSession, rui.AppParams{
 			Title: "SOAP SERVER TR069",
 		})

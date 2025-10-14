@@ -1,8 +1,47 @@
-version: '3'
-
 services:
+  postgresdb:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      DATABASE_HOST: postgresdb
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: acsserver
+      #PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5432:5432" 
+    networks:
+      - backend
+    restart: 
+      always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d acsserver" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      #- ./createdb.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./pg_data:/var/lib/postgresql/data
+  redis:
+    image: redis:8.0 
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
   server:
     build: .
     ports:
-    - "8089:8089"
-    restart: always
+      - "8080:8080"
+    networks:
+      - backend
+    environment: # Pass environment variables to the service
+      REDIS_URL: redis:6379 
+      DATABASE_HOST: postgresdb 
+    depends_on:
+      postgresdb:
+          condition: service_healthy
+      redis:
+          condition: service_started
+volumes:
+  pg_data:
+networks:
+  backend:

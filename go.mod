@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/pkg/errors v0.9.1
+	github.com/spf13/cobra v1.9.1
 	github.com/swaggo/swag v1.8.1
 	github.com/xinsnake/go-http-digest-auth-client v0.6.0
 )
@@ -39,7 +40,6 @@ require (
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/smartystreets/goconvey v1.8.1 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
 	go.uber.org/multierr v1.11.0 // indirect
