@@ -32,6 +32,13 @@ func NewHandlerGetUsers(service *usecase_user.Service) handlers.Handler {
 	}
 }
 func (h *handlerGetUsers) Register(router *httprouter.Router) {
+
+	/*n := negroni.New(
+		negroni.HandlerFunc(middleware.Cors),
+		negroni.HandlerFunc(middleware.Metrics(metricService)),
+		negroni.NewLogger(),
+	)*/
+
 	router.HandlerFunc(http.MethodGet, "/GetUsers", apperror.Middleware(login.AuthMiddleware(h.GetUsers)))
 }
 

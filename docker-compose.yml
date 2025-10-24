@@ -8,10 +8,10 @@ services:
       POSTGRES_DB: acsserver
       #PGDATA: /var/lib/postgresql/data
     ports:
-      - "5432:5432" 
+      - "5432:5432"
     networks:
       - backend
-    restart: 
+    restart:
       always
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d acsserver" ]
@@ -27,19 +27,55 @@ services:
       - "6379:6379"
     networks:
       - backend
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - pushgateway
+    networks:
+      - backend
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - backend
+  pushgateway:
+    image: prom/pushgateway
+    expose:
+      - 9091
+    ports:
+      - "9091:9091"
+    networks:
+      - backend
   server:
     build: .
     ports:
       - "8080:8080"
+      - "8087:8087"
+      - "8082:8082"
     networks:
       - backend
-    environment: # Pass environment variables to the service
-      REDIS_URL: redis:6379 
-      DATABASE_HOST: postgresdb 
+    environment: 
+      REDIS_URL: redis:6379
+      DATABASE_HOST: postgresdb
+      METRICS_PORT: 8082
     depends_on:
       postgresdb:
           condition: service_healthy
       redis:
+          condition: service_started
+      prometheus:
+          condition: service_started
+      grafana:
+          condition: service_started
+      pushgateway:
           condition: service_started
 volumes:
   pg_data:

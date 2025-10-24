@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/ecpartan/soap-server-tr069/httpserver"
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/monitoring"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
 	usecase_device "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/device"
@@ -25,14 +27,16 @@ type handler struct {
 	Cache       *repository.Cache
 	service     *usecase_device.Service
 	execTasks   *tasker.Tasker
+	metrics     *monitoring.MetricsService
 }
 
-func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache, service *usecase_device.Service, execTasks *tasker.Tasker) handlers.Handler {
+func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache, service *usecase_device.Service, execTasks *tasker.Tasker, metrics *monitoring.MetricsService) handlers.Handler {
 	return &handler{
 		mapResponse: mapResponse,
 		Cache:       Cache,
 		service:     service,
 		execTasks:   execTasks,
+		metrics:     metrics,
 	}
 }
 
@@ -113,7 +117,7 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 			logger.LogDebug("found Inform")
 			if sn := p.GetXMLString(ret, "DeviceId.SerialNumber"); sn != "" {
 				h.execTasks.ExecTasks.AddDevicetoTaskList(sn)
-
+				h.metrics.AddDevInst()
 				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
 				logger.LogDebug("paramlist", paramlist)
 				tasks.UpdateCacheBySerial(sn, paramlist, h.Cache, tasks.VALUES)
@@ -172,16 +176,14 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 	}
 }
 
-// Soap main handler
-// @Summary Perform a SOAP request
-// @Tags soap
-// @Success 200
-// @Router / [post]
-func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
+func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, time.Time) {
+
+	t := h.metrics.AddActiveInst()
+
 	soapRequestBytes, err := io.ReadAll(r.Body)
 
 	if err != nil {
-		return fmt.Errorf("could not read POST: %v", err)
+		return fmt.Errorf("could not read POST: %v", err), t
 	}
 
 	addr := r.RemoteAddr
@@ -203,7 +205,8 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 		if tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks) {
 			h.mapResponse.Delete(addr)
 		}
-		return nil
+
+		return nil, t
 	}
 
 	paramType := h.parseXML(addr, mv)
@@ -213,7 +216,7 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 
 	switch paramType {
 	case soap.ResponseUndefinded:
-		return fmt.Errorf("unknown XML Soap Type: %v", err)
+		return fmt.Errorf("unknown XML Soap Type: %v", err), t
 	case soap.FaultResponse:
 		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
@@ -239,6 +242,26 @@ func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
 	if paramType != soap.Inform {
 		tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks)
 	}
+
+	return nil, t
+}
+
+// Soap main handler
+// @Summary Perform a SOAP request
+// @Tags soap
+// @Success 200
+// @Router / [post]
+func (h *handler) PerformSoap(w http.ResponseWriter, r *http.Request) error {
+
+	err, t := h.performSoap(w, r)
+
+	if err != nil {
+		logger.LogErr("PerformSoap", err)
+		h.metrics.MetricsResultReq(t, err.Error())
+		return err
+	}
+
+	h.metrics.MetricsResultReq(t, "OK")
 
 	return nil
 }

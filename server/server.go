@@ -16,7 +16,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
 	"github.com/ecpartan/soap-server-tr069/web"
 
-	"github.com/ecpartan/soap-server-tr069/pkg/metrics"
+	"github.com/ecpartan/soap-server-tr069/pkg/monitoring"
 	"github.com/ecpartan/soap-server-tr069/pkg/users/login"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/server/handlers/devsoap"
@@ -40,12 +40,13 @@ type Server struct {
 	cache       *repository.Cache
 	jrpc2Server *jrpc2.Jrpc2Server
 	ExecTasks   *tasker.Tasker
+	monitoring  *monitoring.MetricsService
 }
 
 func (s *Server) Register() {
 	logger.LogDebug("Registering handlers")
 
-	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService, s.ExecTasks)
+	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService, s.ExecTasks, s.monitoring)
 	mainHandler.Register(s.router)
 
 	taskHandler := devsoap.NewHandlerCR(s.cache, s.ExecTasks, s.service.TasksService, s.service.DeviceService)
@@ -77,10 +78,13 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	router.Handler(http.MethodGet, "/swagger/*any", swag.WrapHandler)
 	cache := repository.NewCache(ctx, cfg)
 
-	metHandler := metrics.Handler{}
-	metHandler.Register(router)
-	web.Register(cfg.Server.Host, cfg.Server.PortWeb)
+	mservice, err := monitoring.NewMetricsService(router)
+	if err != nil {
+		logger.LogDebug("Monitoring service not initialized", err)
+		return nil, err
+	}
 
+	web.Register(cfg.Server.Host, cfg.Server.PortWeb)
 	dbstorage, err := storage.NewStorage(&cfg.DatabaseConf)
 
 	if err != nil {
@@ -100,6 +104,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 			cache:       cache,
 			jrpc2Server: jrpc2.NewJrpc2Server(),
 			ExecTasks:   tasker.InitTasker(dbstorage),
+			monitoring:  mservice,
 		}
 	})
 	logger.LogDebug("GetServer", Instance)
