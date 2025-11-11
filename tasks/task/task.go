@@ -26,6 +26,7 @@ const (
 	Upload
 	FactoryReset
 	Reboot
+	TransferComplete
 )
 
 type Task struct {
@@ -54,6 +55,111 @@ func createSetParamTask(mapTask []any) []taskmodel.SetParamValTask {
 					curr_task.Value = v.(string)
 				case "type":
 					curr_task.Type = v.(string)
+				}
+			}
+			settask = append(settask, curr_task)
+		}
+	}
+
+	fmt.Println("end", settask)
+
+	return settask
+}
+
+func createSetParameterAttributesTask(mapTask []any) []taskmodel.SetParamAttrTask {
+
+	var settask []taskmodel.SetParamAttrTask
+	settask = make([]taskmodel.SetParamAttrTask, 0)
+
+	for _, v := range mapTask {
+
+		if iter_map, ok := v.(map[string]any); ok {
+			curr_task := taskmodel.SetParamAttrTask{}
+			for k, v := range iter_map {
+
+				switch k {
+				case "name":
+					curr_task.Name = v.(string)
+				case "notificationChange":
+					curr_task.NotificationChange = v.(bool)
+				case "notification":
+					curr_task.Notification = v.(int)
+				case "accessListChange":
+					curr_task.AccessListChange = v.(bool)
+				case "accessList":
+					curr_task.AccessList = v.([]string)
+				}
+			}
+			settask = append(settask, curr_task)
+		}
+	}
+
+	fmt.Println("end", settask)
+
+	return settask
+}
+
+func createDownloadTask(mapTask []any) []taskmodel.DownloadTask {
+
+	var settask []taskmodel.DownloadTask
+	settask = make([]taskmodel.DownloadTask, 0)
+
+	for _, v := range mapTask {
+
+		if iter_map, ok := v.(map[string]any); ok {
+			curr_task := taskmodel.DownloadTask{}
+			for k, v := range iter_map {
+
+				switch k {
+				case "filetype":
+					curr_task.FileType = v.(string)
+				case "url":
+					curr_task.URL = v.(string)
+				case "username":
+					curr_task.Username = v.(string)
+				case "password":
+					curr_task.Password = v.(string)
+				case "delaySeconds":
+					curr_task.DelaySeconds = v.(int)
+				case "successUrl":
+					curr_task.SuccessURL = v.(string)
+				case "failureUrl":
+					curr_task.FailureURL = v.(string)
+				}
+			}
+			settask = append(settask, curr_task)
+		}
+	}
+
+	fmt.Println("end", settask)
+
+	return settask
+}
+
+func createUploadTask(mapTask []any) []taskmodel.UploadTask {
+
+	var settask []taskmodel.UploadTask
+	settask = make([]taskmodel.UploadTask, 0)
+	logger.LogDebug("map", mapTask)
+	for _, v := range mapTask {
+
+		if iter_map, ok := v.(map[string]any); ok {
+			curr_task := taskmodel.UploadTask{}
+			logger.LogDebug("map", iter_map)
+
+			for k, v := range iter_map {
+
+				switch k {
+				case "filetype":
+					curr_task.FileType = v.(string)
+				case "url":
+					curr_task.URL = v.(string)
+				case "username":
+					curr_task.Username = v.(string)
+				case "password":
+					curr_task.Password = v.(string)
+				case "delaySeconds":
+					curr_task.DelaySeconds = v.(int)
 				}
 			}
 			settask = append(settask, curr_task)
@@ -142,6 +248,47 @@ func ParseTask(t map[string]any, tsk *entity.TaskViewDB) *Task {
 			rettask.Params = taskmodel.GetParamAttrTask{
 				Name: lst,
 			}
+		case "SetParameterAttributes":
+			if arrayTask, ok := v.([]any); ok {
+				rettask.Action = SetParameterAttributes
+				rettask.Params = createSetParameterAttributesTask(arrayTask)
+			} else {
+				return nil
+			}
+		case "GetRPCMethods":
+			rettask.Action = GetRPCMethods
+		case "Reboot":
+			rettask.Action = Reboot
+		case "FactoryReset":
+			rettask.Action = FactoryReset
+		case "Download":
+			rettask.Action = Download
+			params := taskmodel.DownloadTask{}
+
+			if nms, ok := mapTask["file"].(string); ok {
+				params.FileType = nms
+			}
+			if nms, ok := mapTask["url"].(string); ok {
+				params.URL = nms
+			}
+			rettask.Params = params
+			logger.LogDebug("tsk", rettask)
+
+		case "Upload":
+			logger.LogDebug("Upload", v, reflect.TypeOf(v))
+			params := taskmodel.UploadTask{}
+			if nms, ok := mapTask["file"].(string); ok {
+				params.FileType = nms
+			}
+			if nms, ok := mapTask["url"].(string); ok {
+				params.URL = nms
+			}
+			rettask.Action = Upload
+			rettask.Params = params
+			logger.LogDebug("tsk", rettask)
+		case "TransferComplete":
+			rettask.Action = TransferComplete
+
 		}
 		return &rettask
 

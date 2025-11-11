@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -91,6 +92,11 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	err = NewFileServer()
+	if err != nil {
+		return nil, err
+	}
+
 	serviceDevice := usecase_service.NewService(dbstorage)
 
 	var once sync.Once
@@ -160,4 +166,21 @@ func (s *Server) Run(ctx context.Context) error {
 
 	return grp.Wait()
 
+}
+
+func NewFileServer() error {
+	err := os.Mkdir("./uploads", 0755)
+	if err != nil && !os.IsExist(err) {
+		logger.LogDebug("Error creating directory:", err)
+		return err
+	}
+	fs := http.FileServer(http.Dir("./uploads"))
+	if fs == nil {
+		logger.LogDebug("Error creating file server")
+		return err
+	}
+
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", fs))
+
+	return nil
 }

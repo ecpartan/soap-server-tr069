@@ -162,7 +162,7 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:DownloadResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.DownloadResponse
-		} else if ret, ok := p.GetXML(xml_body, "cwmp:TransferCompleteResponse").(map[string]any); ok {
+		} else if ret, ok := p.GetXML(xml_body, "cwmp:TransferComplete").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.TransferCompleteResponse
 		} else {
@@ -216,7 +216,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 
 	switch paramType {
 	case soap.ResponseUndefinded:
-		return fmt.Errorf("unknown XML Soap Type: %v", err), t
+		return nil, t //fmt.Errorf("unknown XML Soap Type: %v", err), t
 	case soap.FaultResponse:
 		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
@@ -235,6 +235,19 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		tasks.ParseGetParameterNamesResponse(mp, h.Cache)
 	case soap.GetParameterAttributesResponse:
 		tasks.ParseGetParameterAttributesResponse(mp, h.Cache)
+	case soap.SetParameterAttributesResponse:
+		tasks.ParseSetParameterAttributesResponse(mp, h.Cache)
+	case soap.DownloadResponse:
+		tasks.ParseDownloadResponse(mp)
+	case soap.UploadResponse:
+		tasks.ParseUploadResponse(mp)
+	case soap.RebootResponse:
+		tasks.ParseRebootResponse(mp)
+	case soap.FactoryResetResponse:
+		tasks.ParseFactoryResetResponse(mp)
+	case soap.TransferCompleteResponse:
+		httpserver.TransTransferCompleteResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo)
+		//tasks.ParseTransferCompleteResponse(mp)
 	default:
 
 		break

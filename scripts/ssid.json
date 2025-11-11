@@ -9,8 +9,57 @@
         }
       ]
     }
-  },
-  "Serial": "94DE80BF38B2",
+  ,
+  "Serial": "009012BD0001",
   "Event": 6,
   "Once": true
+  }
+}
+
+
+{
+  "Script": {
+    "1": {
+      "Upload":  
+        {
+          "file": "config",
+          "url": "http://localhost:8087/uploads"
+      }
+    }
+  ,
+  "Serial": "009012BD0001",
+  "Event": 6,
+  "Once": true
+  }
+}
+
+
+
+{
+  "Script": {
+    "1": {
+      "Download":  
+        {
+          "file": "config",
+          "url": "http://localhost:8087/uploads/DWR-956_develop_2.187.8_2025.11.11.13.25.25_config.tar.gz"
+      }
+    }
+  ,
+  "Serial": "009012BD0001",
+  "Event": 6,
+  "Once": true
+  }
+}
+
+
+{
+  "Script": {
+    "1": {
+      "GetRPCMethods": {}  
+    }
+  ,
+  "Serial": "009012BD0001",
+  "Event": 6,
+  "Once": true
+  }
 }

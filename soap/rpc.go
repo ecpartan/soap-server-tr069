@@ -56,6 +56,16 @@ func NewInformResponse(env EnvInfo) *InformResponse {
 	return resp
 }
 
+func NewTransferCompleteResponse(env EnvInfo) *TransferResponse {
+	resp := &TransferResponse{}
+
+	resp.EnvInfo = env
+
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
 func NewGetParameterValues(paramlist taskmodel.GetParamValTask, env EnvInfo) *GetParameterValues {
 	logger.LogDebug("NewGetParameterValues")
 	resp := &GetParameterValues{}
@@ -95,14 +105,29 @@ func NewSetParameterValues(paramlist []taskmodel.SetParamValTask, env EnvInfo) *
 	return resp
 }
 
-/*
-	func NewSetParameterAttributes(paramlist []taskmodel.SetParamValTask, env EnvInfo) *SetParameterAttributes {
-		resp := &SetParameterAttributes{}
+func NewSetParameterAttributes(paramlist []taskmodel.SetParamAttrTask, env EnvInfo) *SetParameterAttributes {
+	resp := &SetParameterAttributes{}
+	resp.EnvInfo = env
+	paramstruct := &resp.Body.SetParameterAttributes.ParameterList.SetParameterAttributesStruct
 
-		resp.EnvInfo = env
+	for _, param := range paramlist {
+		curr := &setParameterAttributesStruct{
+			Name:               param.Name,
+			AccessListChange:   param.AccessListChange,
+			NotificationChange: param.NotificationChange,
+			Notification:       param.Notification,
+			AccessList: accessList{
+				ArrayType: "xsd:string[" + strconv.Itoa(len(param.AccessList)) + "]",
+				String:    param.AccessList,
+			},
+		}
+		*paramstruct = append(*paramstruct, *curr)
+	}
+
+	return resp
 
 }
-*/
+
 func NewGetParameterAttributes(paramlist taskmodel.GetParamAttrTask, env EnvInfo) *GetParameterAttributes {
 	resp := &GetParameterAttributes{}
 
@@ -134,7 +159,7 @@ func NewGetParameterNames(paramlist taskmodel.GetParamNamesTask, env EnvInfo) *G
 	return resp
 }
 
-func NewGetRPCMethods(paramlist taskmodel.GetParamNamesTask, env EnvInfo) *GetRPCMethods {
+func NewGetRPCMethods(env EnvInfo) *GetRPCMethods {
 
 	resp := &GetRPCMethods{}
 
@@ -163,6 +188,59 @@ func NewDeleteObject(obj string, env EnvInfo) *DeleteObject {
 	resp.EnvInfo = env
 
 	resp.Body.DeleteObject.ObjectName = obj
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
+func NewReboot(env EnvInfo) *Reboot {
+	resp := &Reboot{}
+	resp.EnvInfo = env
+
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
+func NewFactoryReset(env EnvInfo) *Reset {
+	resp := &Reset{}
+	resp.EnvInfo = env
+
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
+func NewDownload(download taskmodel.DownloadTask, env EnvInfo) *Download {
+	resp := &Download{}
+
+	resp.Body.Download.CommandKey = download.CmdKey
+	resp.Body.Download.DelaySeconds = download.DelaySeconds
+	resp.Body.Download.URL = download.URL
+	if download.FileType == "config" {
+		resp.Body.Download.FileType = "3 Vendor Configuration File"
+	} else {
+		resp.Body.Download.FileType = "3 Vendor Log File"
+	}
+	resp.EnvInfo = env
+
+	resp.Header.ID.MustUnderstand = "1"
+
+	return resp
+}
+
+func NewUpload(upload taskmodel.UploadTask, env EnvInfo) *Upload {
+	resp := &Upload{}
+
+	resp.Body.Upload.CommandKey = upload.CmdKey
+	resp.Body.Upload.URL = upload.URL
+	if upload.FileType == "config" {
+		resp.Body.Upload.FileType = "1 Vendor Configuration File"
+	} else {
+		resp.Body.Upload.FileType = "3 Vendor Log File"
+	}
+	resp.EnvInfo = env
+
 	resp.Header.ID.MustUnderstand = "1"
 
 	return resp

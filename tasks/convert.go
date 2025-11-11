@@ -316,3 +316,79 @@ func ParseGetParameterAttributesResponse(mp *devmap.DevID, l *repository.Cache) 
 
 	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetParameterAttributes"}
 }
+
+func ParseSetParameterAttributesResponse(mp *devmap.DevID, l *repository.Cache) {
+	logger.LogDebug("ParseSetParameterAttributesResponse")
+	logger.LogDebug("body,", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "SetParameterAttributes"}
+		return
+	}
+
+	//paramlist := p.GetXML(mp.Body, "ParameterList.ParameterAttributeStruct").([]any)
+
+	//UpdateCacheBySerial(mp.Serial, paramlist, l, ATTRS)
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "SetParameterAttributes"}
+}
+
+func ParseDownloadResponse(mp *devmap.DevID) {
+	logger.LogDebug("ParseDownloadResponse")
+	logger.LogDebug("body, ", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Download"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Download"}
+}
+
+func ParseUploadResponse(mp *devmap.DevID) {
+	logger.LogDebug("ParseUploadResponse")
+	logger.LogDebug("body, ", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Upload"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Upload"}
+}
+
+func ParseRebootResponse(mp *devmap.DevID) {
+	logger.LogDebug("ParseRebootResponse")
+	logger.LogDebug("body, ", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Reboot"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Reboot"}
+}
+
+func ParseFactoryResetResponse(mp *devmap.DevID) {
+	logger.LogDebug("ParseFactoryResetResponse")
+	logger.LogDebug("body, ", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "FactoryReset"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "FactoryReset"}
+}
+
+func ParseTransferCompleteResponse(mp *devmap.DevID) {
+	logger.LogDebug("ParseTransferCompleteResponse")
+	logger.LogDebug("body, ", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "TransferComplete"}
+		return
+	}
+
+	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "TransferComplete"}
+}

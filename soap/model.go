@@ -51,6 +51,18 @@ type InformResponse struct {
 	} `xml:"SOAP-ENV:Body"`
 }
 
+type TransferResponse struct {
+	EnvInfo
+	HeaderInfo `xml:"Header"`
+	Body       struct {
+		Text                     string `xml:",chardata"`
+		TransferCompleteResponse struct {
+			Text string `xml:",chardata"`
+			Cwmp string `xml:"cwmp,attr"`
+		} `xml:"cwmp:TransferCompleteResponse"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
 type GetBody struct {
 	Body struct {
 		Text               string `xml:",chardata"`
@@ -148,6 +160,33 @@ type GetParameterAttrBody struct {
 		} `xml:"cwmp:GetParameterAttributes"`
 	} `xml:"SOAP-ENV:Body"`
 }
+type accessList struct {
+	Text      string   `xml:",chardata"`
+	ArrayType string   `xml:"arrayType,attr"`
+	String    []string `xml:"string"`
+}
+type setParameterAttributesStruct struct {
+	Text               string     `xml:",chardata"`
+	Name               string     `xml:"Name"`
+	NotificationChange bool       `xml:"NotificationChange"`
+	Notification       int        `xml:"Notification"`
+	AccessListChange   bool       `xml:"AccessListChange"`
+	AccessList         accessList `xml:"AccessList"`
+}
+
+type SetParameterAttrBody struct {
+	Body struct {
+		Text                   string `xml:",chardata"`
+		SetParameterAttributes struct {
+			Text          string `xml:",chardata"`
+			ParameterList struct {
+				Text                         string                         `xml:",chardata"`
+				ArrayType                    string                         `xml:"OAP-ENC:arrayType,attr"`
+				SetParameterAttributesStruct []setParameterAttributesStruct `xml:"SetParameterAttributesStruct"`
+			} `xml:"ParameterList"`
+		} `xml:"cwmp:SetParameterAttributes"`
+	} `xml:"SOAP-ENV:Body"`
+}
 
 type SetParameterValues struct {
 	EnvInfo
@@ -189,4 +228,74 @@ type GetParameterAttributes struct {
 	EnvInfo
 	Header2Info
 	GetParameterAttrBody
+}
+
+type SetParameterAttributes struct {
+	EnvInfo
+	HeaderInfo
+	SetParameterAttrBody
+}
+
+type Reboot struct {
+	EnvInfo
+	HeaderInfo
+	Body struct {
+		Text   string `xml:",chardata"`
+		Reboot struct {
+			Text       string `xml:",chardata"`
+			CommandKey string `xml:"CommandKey"`
+		} `xml:"cwmp:Reboot"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
+type Reset struct {
+	EnvInfo
+	HeaderInfo
+	Body struct {
+		Text         string `xml:",chardata"`
+		FactoryReset struct {
+			Text string `xml:",chardata"`
+		} `xml:"cwmp:FactoryReset"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
+type Upload struct {
+	EnvInfo
+	HeaderInfo
+	Body struct {
+		Text   string `xml:",chardata"`
+		Upload struct {
+			Text         string `xml:",chardata"`
+			CommandKey   string `xml:"CommandKey"`
+			FileType     string `xml:"FileType"`
+			URL          string `xml:"URL"`
+			Username     string `xml:"Username"`
+			Password     string `xml:"Password"`
+			DelaySeconds string `xml:"DelaySeconds"`
+		} `xml:"cwmp:Upload"`
+	} `xml:"SOAP-ENV:Body"`
+}
+
+type DownloadBody struct {
+	Body struct {
+		Text     string `xml:",chardata"`
+		Download struct {
+			Text           string `xml:",chardata"`
+			CommandKey     string `xml:"CommandKey"`
+			FileType       string `xml:"FileType"`
+			URL            string `xml:"URL"`
+			Username       string `xml:"Username"`
+			Password       string `xml:"Password"`
+			FileSize       int64  `xml:"FileSize"`
+			TargetFileName string `xml:"TargetFileName"`
+			DelaySeconds   int    `xml:"DelaySeconds"`
+			SuccessURL     string `xml:"SuccessURL"`
+			FailureURL     string `xml:"FailureURL"`
+		} `xml:"cwmp:Download"`
+	} `xml:"SOAP-ENV:Body"`
+}
+type Download struct {
+	EnvInfo
+	HeaderInfo
+	DownloadBody
 }

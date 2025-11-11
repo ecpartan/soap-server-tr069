@@ -8,6 +8,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
 	"github.com/ecpartan/soap-server-tr069/tasks/task"
 	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
+	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
 func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB) error {
@@ -21,6 +22,27 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+
+	if tsk == nil {
+		var oncebool bool
+		var eventint int
+
+		if once, ok := scriptList["Once"]; ok {
+			if oncebool, ok = once.(bool); !ok {
+				oncebool = true
+			}
+		}
+
+		if event, ok := scriptList["Event"]; ok {
+			if eventf, ok := event.(float64); !ok {
+				eventint = 6
+			} else {
+				eventint = int(eventf)
+			}
+		}
+
+		tsk = entity.NewTaskViewDB(utils.NewID(), "Pending", eventint, oncebool, string(utils.MapToString(scriptList)))
+	}
 
 	for _, k := range keys {
 		if curr_task, ok := scriptList[k]; ok {
@@ -38,39 +60,3 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 
 	return nil
 }
-
-/*
-func InitTasks(s *storage.Storage) *taskexec.TaskExec {
-	stasks := make(map[string][]task.Task)
-	lst := make(map[string][]task.Task)
-
-	exec := &taskexec.TaskExec{
-		ScripterTasks: stasks,
-		Lst: taskexec.ListTasks{
-			TaskList: lst,
-		},
-	}
-	tskStatorage := s.TasksStorage
-
-	lsts, err := tskStatorage.ListWithOP()
-	if err != nil {
-		return nil
-	}
-
-	for _, tsk := range lsts {
-
-		mp := map[string]any{}
-		if err := json.Unmarshal([]byte(tsk.Body), &mp); err != nil {
-			logger.LogDebug("Err", err)
-		}
-		sn := parsemap.GetSnScript(mp)
-
-		err = AddToScripter(sn, mp, nil)
-
-	}
-
-	logger.LogDebug("Init tasks", exec.ScripterTasks)
-
-	return exec
-}
-*/

@@ -1,14 +1,17 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
+	"github.com/ecpartan/soap-server-tr069/internal/config"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	jrcp2server "github.com/ecpartan/soap-server-tr069/pkg/jrpc2"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/mwdto"
@@ -34,6 +37,30 @@ func NewHandler(Cache *repository.Cache, execTasks *tasker.Tasker) handlers.Hand
 func (h *handlerJrpc2) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, "/front", apperror.Middleware(h.ExecFrontReq))
 	router.HandlerFunc(http.MethodGet, "/frontcli", apperror.Middleware(h.ExecFrontWithoutJRPC2))
+}
+
+func RequestToFrontCli(cfg *config.Config, jsonData []byte) (string, error) {
+
+	client := &http.Client{}
+	url := fmt.Sprintf("http://%s:%d/frontcli", cfg.Server.Host, cfg.Server.Port)
+
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
 }
 
 // Execute Frontend request

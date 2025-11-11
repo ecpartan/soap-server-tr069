@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
@@ -72,4 +73,60 @@ func TransGetParameterAttributes(w http.ResponseWriter, req any, sp *soap.SoapSe
 		responseEnvelope := soap.NewGetParameterAttributes(getlist, sp.Env)
 		TransmitXMLReq(responseEnvelope, w, sp.ContentType)
 	}
+}
+
+func TransSetParameterAttributes(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransSetParameterAttributes")
+
+	if setlist, ok := req.([]taskmodel.SetParamAttrTask); ok {
+		responseEnvelope := soap.NewSetParameterAttributes(setlist, sp.Env)
+		TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+	}
+}
+
+func TransReboot(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransReboot")
+
+	responseEnvelope := soap.NewReboot(sp.Env)
+	TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+}
+
+func TransFactoryReset(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransFactoryReset")
+
+	responseEnvelope := soap.NewFactoryReset(sp.Env)
+	TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+}
+
+func TransDownload(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransDownload")
+
+	if download, ok := req.(taskmodel.DownloadTask); ok {
+		responseEnvelope := soap.NewDownload(download, sp.Env)
+		TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+	}
+}
+
+func TransUpload(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransUpload", req, reflect.TypeOf(req))
+
+	if upload, ok := req.(taskmodel.UploadTask); ok {
+		responseEnvelope := soap.NewUpload(upload, sp.Env)
+		TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+	}
+}
+
+func TransGetRPCMethods(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransGetRPCMethods")
+
+	responseEnvelope := soap.NewGetRPCMethods(sp.Env)
+	TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+}
+
+func TransTransferCompleteResponse(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
+	logger.LogDebug("TransTransferCompleteResponse")
+
+	responseEnvelope := soap.NewTransferCompleteResponse(sp.Env)
+	TransmitXMLReq(responseEnvelope, w, sp.ContentType)
+
 }

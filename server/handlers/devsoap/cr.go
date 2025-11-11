@@ -1,12 +1,10 @@
 package devsoap
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"sort"
 
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
@@ -121,6 +119,7 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 	if sn == "" {
 		return fmt.Errorf("failed SN in CR: %v", err)
 	}
+
 	err = scripter.AddToScripter(sn, getScript, nil)
 
 	if err != nil {
@@ -206,39 +205,6 @@ func getTaskType(mp map[string]any) (tskType, any) {
 	}
 }
 
-func mapToString(m map[string]any) string {
-	var b bytes.Buffer
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys) // Sort keys for consistent string representation
-
-	b.WriteString("{")
-	for i, k := range keys {
-		v := m[k]
-		if i > 0 {
-			b.WriteString(", ")
-		}
-		// Handle different types within 'any'
-		switch val := v.(type) {
-		case string:
-			fmt.Fprintf(&b, "\"%s\":\"%s\"", k, val)
-		case int, int8, int16, int32, int64:
-			fmt.Fprintf(&b, "\"%s\":%d", k, val)
-		case float32, float64:
-			fmt.Fprintf(&b, "\"%s\":%f", k, val)
-		case bool:
-			fmt.Fprintf(&b, "\"%s\":%t", k, val)
-		default:
-			// Fallback for other types, using default string representation
-			fmt.Fprintf(&b, "\"%s\":%v", k, val)
-		}
-	}
-	b.WriteString("}")
-	return b.String()
-}
-
 // Add task to exec
 // @Summary AddTask
 // @Tags SOAP
@@ -301,7 +267,8 @@ func (h *handlerCR) AddTask(w http.ResponseWriter, r *http.Request) error {
 
 	view := entity.NewTaskView(taskType.String(), oncebool, eventint)
 
-	str := mapToString(getScript)
+	str := utils.MapToString(getScript)
+	logger.LogDebug("str", str)
 
 	var op_id utils.ID
 	if operationId, ok := mp["OperationId"]; !ok {
@@ -373,7 +340,6 @@ func (h *handlerCR) AddTask(w http.ResponseWriter, r *http.Request) error {
 	} else {
 		return fmt.Errorf("no found addres for this device by SN: %v", err)
 	}
-	logger.LogDebug("body_task", "end")
 
 	return nil
 

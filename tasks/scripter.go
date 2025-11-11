@@ -125,6 +125,13 @@ var map_tasks = map[task.TaskRequestType]func(w http.ResponseWriter, req any, sp
 	task.DeleteObject:           httpserver.TransDeleteObject,
 	task.GetParameterNames:      httpserver.TransGetParameterNames,
 	task.GetParameterAttributes: httpserver.TransGetParameterAttributes,
+	task.SetParameterAttributes: httpserver.TransSetParameterAttributes,
+	task.Download:               httpserver.TransDownload,
+	task.Upload:                 httpserver.TransUpload,
+	task.Reboot:                 httpserver.TransReboot,
+	task.FactoryReset:           httpserver.TransFactoryReset,
+	task.GetRPCMethods:          httpserver.TransGetRPCMethods,
+	task.TransferComplete:       httpserver.TransTransferCompleteResponse,
 }
 
 func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo), t task.Task, rp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup, w http.ResponseWriter) {

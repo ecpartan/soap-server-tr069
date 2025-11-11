@@ -33,6 +33,16 @@ type TaskViewDB struct {
 	Body      string
 }
 
+func NewTaskViewDB(id utils.ID, status string, eventCode int, once bool, body string) *TaskViewDB {
+	return &TaskViewDB{
+		ID:        id,
+		Status:    status,
+		EventCode: eventCode,
+		Once:      once,
+		Body:      body,
+	}
+}
+
 func NewTaskView(typ string, once bool, eventCode int) *TaskView {
 	return &TaskView{
 		Type:      typ,

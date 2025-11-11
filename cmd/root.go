@@ -14,6 +14,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/config"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/middleware"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 
 	"github.com/ecpartan/soap-server-tr069/server"
@@ -279,31 +280,12 @@ var setvalueExecCmd = &cobra.Command{
 			script.Script.Num1.SetParameterValueStruct = append(script.Script.Num1.SetParameterValueStruct, setParameterValueStruct{Name: name, Value: val, Type: name_type})
 		}
 
-		url := fmt.Sprintf("http://%s:%d/frontcli", cfg.Server.Host, cfg.Server.Port)
-
-		client := &http.Client{}
-
 		jsonData, err := json.Marshal(script)
 		if err != nil {
 			log.Fatalf("JSON err: %v", err)
 		}
 
-		req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonData))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(string(body))
+		middleware.RequestToFrontCli(cfg, jsonData)
 
 		var arr = []*string{}
 
@@ -317,12 +299,14 @@ var setvalueExecCmd = &cobra.Command{
 				recurse(mp, curr, &arr)
 			}
 		}
+
 		var result string
 		for i, line := range arr {
 			set_args := strings.Split(args[i+1], "=")
 			path := set_args[0]
 			result += path + *line + "\n"
 		}
+
 		fmt.Println(result)
 	},
 }

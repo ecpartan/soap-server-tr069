@@ -1,1 +1,4 @@
-{"Script":{"1":{"GetParameterNames":{"Name":"InternetGatewayDevice.WANDevice.","NextLevel":0}},"Serial":"94DE80BF38B2"}}
+{"Script":{"1":{"GetParameterNames":{"Name":"InternetGatewayDevice.WANDevice.","NextLevel":0}},"Serial":"009012BD0001"}}
+
+
+{"jsonrpc":"2.0","id":1,"method":"AddScript","params":{"Script":{"1":{"AddObject":{"Name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection."}},"2":{"SetParameterValues":[{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.SubnetMask","value":"255.255.255.240","type":"xsd:string"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.Enable","value":"1","type":"xsd:boolean"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.AddressingType","value":"Static","type":"xsd:string"},{"name":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#0.ExternalIPAddress","value":"192.168.152.31","type":"xsd:string"}]},"Serial":"009012BD0001"}}}

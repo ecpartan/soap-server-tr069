@@ -10,6 +10,7 @@ const (
 	GetParameterNamesResponse
 	GetParameterAttributesResponse
 	SetParameterAttributesResponse
+	RebootResponse
 	FactoryResetResponse
 	UploadResponse
 	DownloadResponse
