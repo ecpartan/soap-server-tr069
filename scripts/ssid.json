@@ -23,7 +23,7 @@
       "Upload":  
         {
           "file": "config",
-          "url": "http://localhost:8087/uploads"
+          "url": "http://192.168.0.129:8087/files/dwr956"
       }
     }
   ,
@@ -41,7 +41,7 @@
       "Download":  
         {
           "file": "config",
-          "url": "http://localhost:8087/uploads/DWR-956_develop_2.187.8_2025.11.11.13.25.25_config.tar.gz"
+          "url": "http://192.168.0.129:8087/files/dwr956"
       }
     }
   ,
