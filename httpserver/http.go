@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -69,7 +70,12 @@ func addSOAPHeader(w http.ResponseWriter, contentLength int, contentType string)
 	w.Header().Set("Content-Length", fmt.Sprint(contentLength))
 }
 
-func TransmitXMLReq(request any, w http.ResponseWriter, contentType string) {
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func TransmitXMLReq(request any, w http.ResponseWriter, contentType, user, pass string) {
 	xmlBytes, err := newDefaultMarshaller().Marshal(request)
 	// Adjust namespaces for SOAP 1.2
 
@@ -77,6 +83,10 @@ func TransmitXMLReq(request any, w http.ResponseWriter, contentType string) {
 		HandleError(fmt.Errorf("could not marshal response:: %s", err), w)
 	}
 	addSOAPHeader(w, len(xmlBytes), contentType)
+
+	if user != "" && pass != "" {
+		w.Header().Set("Authorization", "Basic "+basicAuth(user, pass))
+	}
 
 	code, err := w.Write(xmlBytes)
 	logger.LogDebug("Writing response: ", err, len(xmlBytes), code)

@@ -151,8 +151,13 @@ SELECT gen_random_uuid(), 'config', 'config', 100, '1.0.0', NOW(), NOW();
 INSERT INTO profile (id, name, description, firmware_id, config_id)
 VALUES (gen_random_uuid(), 'default', 'Default profile', (SELECT id FROM firmware WHERE name = 'firmware' LIMIT 1),( SELECT id FROM config WHERE name = 'config'));
 
+
 INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, cr_url, uptime, status, datamodel, username, password, cr_username, cr_password, mac, created_at, updated_at, profile_id)
 SELECT gen_random_uuid(), '94DE80BF38B2', 'D-LINK', 'DIR-825', '94DE80', 'develop', 'DebugOnHost', 'http://127.0.0.1:8999/', 0, 'off', '98', '', '', '', '', '94:DE:80:BF:38:B2', NOW(), NOW(), id FROM profile WHERE name = 'default';
+
+
+INSERT INTO device (id, sn, manufacturer, model, oui, sw_version, hw_version, cr_url, uptime, status, datamodel, username, password, cr_username, cr_password, mac, created_at, updated_at, profile_id)
+SELECT gen_random_uuid(), '009012BD0001', 'D-LINK', 'DWR-956', '009012', 'develop', 'B1', 'http://192.168.0.1:8999/', 0, 'off', '98', 'user1', 'pass1', 'crreqw1', 'crreqwpass1', '94:DE:80:BF:38:B2', NOW(), NOW(), id FROM profile WHERE name = 'default';
 
 
 INSERT INTO task_op (id, name, body)
@@ -170,7 +175,6 @@ VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (S
 
 INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
 VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script3' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
-
 
 
 

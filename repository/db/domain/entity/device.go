@@ -40,6 +40,13 @@ type DeviceView struct {
 	CrURL        string
 }
 
+type DeviceAuthView struct {
+	Username   string
+	Password   string
+	CrUsername string
+	CrPassword string
+}
+
 func NewDeviceView(serial, man, model, oui, sw, hw, datamodel, crurl string) *DeviceView {
 	return &DeviceView{
 		SerialNumber: serial,
@@ -50,6 +57,15 @@ func NewDeviceView(serial, man, model, oui, sw, hw, datamodel, crurl string) *De
 		HwVersion:    hw,
 		Datamodel:    datamodel,
 		CrURL:        crurl,
+	}
+}
+
+func NewDeviceAuthView(username, password, crusername, crpassword string) *DeviceAuthView {
+	return &DeviceAuthView{
+		Username:   username,
+		Password:   password,
+		CrUsername: crusername,
+		CrPassword: crpassword,
 	}
 }
 

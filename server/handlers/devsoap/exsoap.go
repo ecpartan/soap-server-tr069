@@ -68,9 +68,8 @@ func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform 
 	sw = p.GetXMLValue(tree, soap.SW_V)
 	model = p.GetXMLValue(tree, soap.MODELNAME)
 
-	view := entity.NewDeviceView(serial, manufacturer, model, oui, sw, hw, datamodel, crurl)
-
 	if dev == nil {
+		view := entity.NewDeviceView(serial, manufacturer, model, oui, sw, hw, datamodel, crurl)
 		_, err := h.service.CreateDevice(*view)
 		return err
 	} else {
@@ -86,7 +85,7 @@ func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform 
 	}
 }
 
-func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType {
+func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any) soap.TaskResponseType {
 	logger.LogDebug("ParseXML", mv)
 	if mv == nil {
 		return soap.ResponseUndefinded
@@ -116,6 +115,17 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:Inform").(map[string]any); ok {
 			logger.LogDebug("found Inform")
 			if sn := p.GetXMLString(ret, "DeviceId.SerialNumber"); sn != "" {
+				if authview, err := h.service.GetAuthDeviceBySn(sn); err == nil {
+					logger.LogDebug("authview", authview)
+					mp.AuthUsername = authview.Username
+					mp.AuthPassword = authview.Password
+					if !check_authorization(r, mp) {
+						return soap.ResponseUnauthorized
+					}
+				} else {
+					logger.LogDebug("authview", err)
+				}
+
 				h.execTasks.ExecTasks.AddDevicetoTaskList(sn)
 				h.metrics.AddDevInst()
 				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
@@ -176,6 +186,23 @@ func (h *handler) parseXML(addr string, mv map[string]any) soap.TaskResponseType
 	}
 }
 
+func check_authorization(r *http.Request, mp *devmap.DevID) bool {
+	requiredUser := mp.AuthUsername
+	requiredPassword := mp.AuthPassword
+
+	if requiredUser == "" || requiredPassword == "" {
+		return true
+	}
+
+	user, password, hasAuth := r.BasicAuth()
+	logger.LogDebug("Basic auth: ", hasAuth, user, password)
+	if hasAuth && user == requiredUser && password == requiredPassword {
+		return true
+	}
+
+	return false
+}
+
 func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, time.Time) {
 
 	t := h.metrics.AddActiveInst()
@@ -209,7 +236,15 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		return nil, t
 	}
 
-	paramType := h.parseXML(addr, mv)
+	paramType := h.parseXML(r, addr, mv)
+
+	if paramType == soap.ResponseUnauthorized {
+		return apperror.ErrUnAuthorized, t
+	}
+
+	if err != nil {
+		return err, t
+	}
 
 	logger.LogDebug("mapresponse", h.mapResponse)
 	logger.LogDebug("found soap type", paramType, mp.Body)

@@ -19,4 +19,5 @@ const (
 	TransferCompleteResponse
 	ResponseUndefinded
 	FaultResponse
+	ResponseUnauthorized
 )

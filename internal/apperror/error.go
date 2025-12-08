@@ -19,6 +19,7 @@ var (
 	ErrInternal       = NewAppError("Internal Error", "Internal Error", "500")
 	ErrMethodNotFound = NewAppError("Method Not Found", "Method Not Found", "404")
 	ErrInvalidType    = NewAppError("Invalid Type", "Invalid Type", "400")
+	ErrUnAuthorized   = NewAppError("Unauthorized", "Unauthorized", "401")
 )
 
 func (e *AppError) Error() string {

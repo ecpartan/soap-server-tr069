@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/ecpartan/soap-server-tr069/httpserver"
 	"github.com/ecpartan/soap-server-tr069/internal/apperror"
+	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
@@ -19,18 +21,19 @@ import (
 	"github.com/ecpartan/soap-server-tr069/tasks/tasker"
 	"github.com/ecpartan/soap-server-tr069/utils"
 	"github.com/julienschmidt/httprouter"
-	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
 type handlerCR struct {
+	mapResponse   *devmap.DevMap
 	Cache         *repository.Cache
 	execTasks     *tasker.Tasker
 	taskservice   *usecase_tasks.Service
 	deviceService *usecase_device.Service
 }
 
-func NewHandlerCR(Cache *repository.Cache, execTasks *tasker.Tasker, taskservice *usecase_tasks.Service, deviceService *usecase_device.Service) handlers.Handler {
+func NewHandlerCR(mapResponse *devmap.DevMap, Cache *repository.Cache, execTasks *tasker.Tasker, taskservice *usecase_tasks.Service, deviceService *usecase_device.Service) handlers.Handler {
 	return &handlerCR{
+		mapResponse:   mapResponse,
 		Cache:         Cache,
 		execTasks:     execTasks,
 		taskservice:   taskservice,
@@ -42,56 +45,6 @@ func (h *handlerCR) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, "/addcr", apperror.Middleware(h.PerformConReq))
 	router.HandlerFunc(http.MethodPost, "/addtask", apperror.Middleware(h.AddTask))
 }
-
-/*
-func ExecuteCR(bytes []byte, cache *repository.Cache) error {
-
-	var getScript map[string]any
-	err := json.Unmarshal(bytes, &getScript)
-	if err != nil {
-		return fmt.Errorf("failed unmarshal task CR: %v", err)
-	}
-
-	logger.LogDebug("body_task", getScript)
-
-	script := p.GetXML(getScript, "Script")
-	serial := p.GetXML(script, "Serial")
-	logger.LogDebug("sn", serial, reflect.TypeOf(serial))
-
-	sn := serial.(string)
-	if sn == "" {
-		return fmt.Errorf("failed SN in CR: %v", err)
-	}
-	err = tasks.AddToScripter(sn, script.(map[string]any))
-
-	if err != nil {
-		return fmt.Errorf("failed add task CR: %v", err)
-	}
-
-	tree := cache.Get(sn)
-
-	if tree == nil {
-		logger.LogDebug("mp is nil")
-		return fmt.Errorf("failed no found SN in DB: %v", err)
-	}
-
-	logger.LogDebug("mp", tree)
-	url := p.GetXML(tree, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL.Value")
-
-	if crURL, ok := url.(string); ok {
-		logger.LogDebug("crURL", crURL)
-		dr := dac.NewRequest("", "", "GET", crURL, "")
-		_, err := dr.Execute()
-
-		if err != nil {
-			return fmt.Errorf("error in execute connection request: %v", err)
-		}
-	} else {
-		return fmt.Errorf("no found addres for this device by SN: %v", err)
-	}
-
-	return nil
-}*/
 
 // Connect to the server
 // @Summary Perfform a CR
@@ -135,17 +88,11 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 
 	logger.LogDebug("mp", tree)
 	url := p.GetXMLValue(tree, soap.CR_URL)
-
-	if url != "" {
-		logger.LogDebug("crURL", url)
-		dr := dac.NewRequest("", "", "GET", url, "")
-		_, err := dr.Execute()
-
-		if err != nil {
-			return fmt.Errorf("error in execute connection request: %v", err)
-		}
-	} else {
-		return fmt.Errorf("no found addres for this device by SN: %v", err)
+	mp := h.mapResponse.Get(sn)
+	user := mp.AuthUsername
+	pass := mp.AuthPassword
+	if err = httpserver.ExecRequest(url, user, pass); err != nil {
+		return err
 	}
 
 	return nil
@@ -329,16 +276,12 @@ func (h *handlerCR) AddTask(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("mp", tree)
 	url := p.GetXMLValue(tree, soap.CR_URL)
 
-	if url != "" {
-		logger.LogDebug("crURL", url)
-		dr := dac.NewRequest("", "", "GET", url, "")
-		_, err := dr.Execute()
+	m := h.mapResponse.Get(sn)
+	user := m.AuthUsername
+	pass := m.AuthPassword
 
-		if err != nil {
-			return fmt.Errorf("error in execute connection request: %v", err)
-		}
-	} else {
-		return fmt.Errorf("no found addres for this device by SN: %v", err)
+	if err = httpserver.ExecRequest(url, user, pass); err != nil {
+		return err
 	}
 
 	return nil

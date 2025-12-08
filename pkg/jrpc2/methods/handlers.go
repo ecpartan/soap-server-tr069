@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/ecpartan/soap-server-tr069/httpserver"
 	"github.com/ecpartan/soap-server-tr069/internal/config"
+	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
@@ -16,7 +18,6 @@ import (
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/tasks/scripter"
-	dac "github.com/xinsnake/go-http-digest-auth-client"
 )
 
 const (
@@ -110,19 +111,10 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 	}
 
 	url := p.GetXMLValue(tree, soap.CR_URL)
+	mp := devmap.GetDevMap().Get(sn)
 
-	if url != "" {
-		logger.LogDebug("crURL", url)
-		dr := dac.NewRequest("", "", "GET", url, "")
-		_, err := dr.Execute()
-
-		if err != nil {
-			logger.LogDebug("AddScriptTask", err)
-
-			return nil, NewAppError("500", err.Error())
-		}
-	} else {
-		return nil, NewAppError("500", "crURL is nil")
+	if err := httpserver.ExecRequest(url, mp.AuthUsername, mp.AuthPassword); err != nil {
+		return nil, err
 	}
 
 	wg.Add(1)

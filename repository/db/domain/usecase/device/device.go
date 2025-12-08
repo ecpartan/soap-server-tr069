@@ -137,3 +137,14 @@ func (s *Service) UpdateDeviceProfileIDbySN(sn string, profileID utils.ID) error
 
 	return s.repo.Update(d)
 }
+
+func (s *Service) GetAuthDeviceBySn(sn string) (*entity.DeviceAuthView, error) {
+	dev, err := s.GetOneBySn(sn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return entity.NewDeviceAuthView(dev.Username, dev.Password, dev.CrUsername, dev.CrPassword), nil
+
+}

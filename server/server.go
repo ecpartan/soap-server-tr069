@@ -50,7 +50,7 @@ func (s *Server) Register() {
 	mainHandler := devsoap.NewHandler(s.mapResponse, s.cache, s.service.DeviceService, s.ExecTasks, s.monitoring)
 	mainHandler.Register(s.router)
 
-	taskHandler := devsoap.NewHandlerCR(s.cache, s.ExecTasks, s.service.TasksService, s.service.DeviceService)
+	taskHandler := devsoap.NewHandlerCR(s.mapResponse, s.cache, s.ExecTasks, s.service.TasksService, s.service.DeviceService)
 	taskHandler.Register(s.router)
 
 	treeHandler := devsoap.NewHandlerGetTree(s.cache)

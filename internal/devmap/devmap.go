@@ -30,6 +30,10 @@ func NewDevMap() *DevMap {
 	})
 	return d
 }
+
+func GetDevMap() *DevMap {
+	return d
+}
 func (d *DevMap) Get(key string) *DevID {
 	d.RLock()
 	defer d.RUnlock()
