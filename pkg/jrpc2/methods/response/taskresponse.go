@@ -14,9 +14,9 @@ var EndTaskResponse = make(map[string]RetScriptTask)
 
 func WriteInChannel(sn string, code string, message string) {
 	logger.LogDebug("WriteInChannel", sn, code, message)
-	/*if _, ok := EndTaskChansMap[sn]; !ok {
+	if _, ok := EndTaskChansMap[sn]; !ok {
 		EndTaskChansMap[sn] = make(chan *RetScriptTask, 1)
-	}*/
+	}
 	EndTaskChansMap[sn] <- &RetScriptTask{
 		Code:    code,
 		Message: message,
@@ -27,14 +27,5 @@ func CloseChannelBySn(sn string) {
 	if _, ok := EndTaskChansMap[sn]; ok {
 		close(EndTaskChansMap[sn])
 		delete(EndTaskChansMap, sn)
-	}
-}
-
-func GetResponse(sn string) *RetScriptTask {
-	logger.LogDebug("GetResponse", sn)
-	if resp, ok := EndTaskResponse[sn]; !ok {
-		return nil
-	} else {
-		return &resp
 	}
 }

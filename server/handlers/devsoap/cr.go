@@ -73,7 +73,7 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 		return fmt.Errorf("failed SN in CR: %v", err)
 	}
 
-	err = scripter.AddToScripter(sn, getScript, nil)
+	_, err = scripter.AddToScripter(sn, getScript, nil)
 
 	if err != nil {
 		return fmt.Errorf("failed add task CR: %v", err)
@@ -243,7 +243,7 @@ func (h *handlerCR) AddTask(w http.ResponseWriter, r *http.Request) error {
 
 	switch taskType {
 	case Script:
-		err = scripter.AddToScripter(sn, getScript, &tsk_db)
+		_, err = scripter.AddToScripter(sn, getScript, &tsk_db)
 
 		/*
 			case SetList:

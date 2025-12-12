@@ -11,7 +11,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
-func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB) error {
+func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB) (int, error) {
 
 	e := tasker.GetTasker().ExecTasks.Lst.TaskList
 
@@ -50,7 +50,7 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 				find_task := task.ParseTask(addtask, tsk)
 				logger.LogDebug("Add task", find_task)
 				if find_task == nil {
-					return errors.New("failed task")
+					return 0, errors.New("failed task")
 				}
 				e[sn] = append(e[sn], *find_task)
 			}
@@ -58,5 +58,5 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 	}
 	logger.LogDebug("AddToScripter", "scripterTasks", e)
 
-	return nil
+	return len(e[sn]), nil
 }

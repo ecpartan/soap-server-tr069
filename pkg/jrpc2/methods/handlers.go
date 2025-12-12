@@ -70,7 +70,7 @@ func watchChannel(sn string, ch <-chan *response.RetScriptTask, wg *sync.WaitGro
 	logger.LogDebug("Watching channel: ", sn)
 
 	for channelValue := range ch {
-		logger.LogDebug("Channel '%s' with value: '%s'\n", sn, channelValue.Code)
+		logger.LogDebug("watchChannel", "Channel '%s' with value: '%s'\n", sn, channelValue.Code)
 		response.EndTaskResponse[sn] = *channelValue
 		wg.Done()
 	}
@@ -88,7 +88,7 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 		return nil, ErrNotfoundSerial
 	}
 
-	err := scripter.AddToScripter(sn, dto.Reqw, nil)
+	cnt, err := scripter.AddToScripter(sn, dto.Reqw, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 		return nil, err
 	}
 
-	wg.Add(1)
+	wg.Add(cnt)
 	response.EndTaskChansMap[sn] = make(chan *response.RetScriptTask)
 	go watchChannel(sn, response.EndTaskChansMap[sn], &wg)
 	wg.Wait()
