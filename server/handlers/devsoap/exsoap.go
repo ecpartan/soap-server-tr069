@@ -11,6 +11,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
 	"github.com/ecpartan/soap-server-tr069/pkg/monitoring"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
@@ -230,6 +231,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	if mv == nil {
 		logger.LogDebug("End session")
 		if tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks) {
+			response.CloseChannelBySn(mp.Serial)
 			h.mapResponse.Delete(addr)
 		}
 
