@@ -11,6 +11,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/httplogger"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
 	"github.com/ecpartan/soap-server-tr069/pkg/monitoring"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
@@ -42,7 +43,24 @@ func NewHandler(mapResponse *devmap.DevMap, Cache *repository.Cache, service *us
 }
 
 func (h *handler) Register(router *httprouter.Router) {
-	router.HandlerFunc(http.MethodPost, "/", apperror.Middleware(h.PerformSoap))
+	/*err := os.Remove("./output")
+
+	file, err := os.OpenFile("./output", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return
+	}
+	httplg := httplog.LoggerWithConfig(httplog.LoggerConfig{
+		RouterName:  "FillBodyFormatter",
+		Formatter:   httplog.FullFormatterWithRequestAndResponseHeadersAndBody,
+		CaptureBody: true,
+		Output:      file,
+	})
+
+	router.Handler(http.MethodPost, "/", httplg(http.HandlerFunc(h.PerformSoap)))*/
+
+	router.Handler(http.MethodPost, "/", httplogger.NewHTTPLogger().Middleware(apperror.Middleware(h.PerformSoap)))
+	//router.Handler(http.MethodPost, "/", LoggingMiddleware(h.PerformSoap))
+
 }
 
 func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform map[string]any) error {

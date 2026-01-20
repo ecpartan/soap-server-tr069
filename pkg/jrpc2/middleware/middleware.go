@@ -37,6 +37,9 @@ func NewHandler(Cache *repository.Cache, execTasks *tasker.Tasker) handlers.Hand
 func (h *handlerJrpc2) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, "/front", apperror.Middleware(h.ExecFrontReq))
 	router.HandlerFunc(http.MethodGet, "/frontcli", apperror.Middleware(h.ExecFrontWithoutJRPC2))
+
+	router.HandlerFunc(http.MethodGet, "/integral", apperror.Middleware(h.ExecTestTasks))
+
 }
 
 func RequestToFrontCli(cfg *config.Config, jsonData []byte) (string, error) {
@@ -102,7 +105,7 @@ func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) erro
 						var ret []byte
 						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 						defer cancel()
-						err := jrcp2server.Instance.Server.Client.CallResult(ctx, req.Method, mwdto.Mwdto{script, h.execTasks.ExecTasks}, &ret)
+						err := jrcp2server.Instance.Server.Client.CallResult(ctx, req.Method, mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
 						return ret, err
 					}
 
@@ -131,6 +134,55 @@ func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) erro
 
 func (h *handlerJrpc2) ExecFrontWithoutJRPC2(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("Enter ExecFrExecFrontWithoutJRPC2ontReq")
+	logger.LogDebug("soapRequestBytes", h.execTasks)
+
+	msg, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	var mp map[string]any
+	err = json.Unmarshal(msg, &mp)
+
+	if err != nil {
+		return err
+	}
+
+	logger.LogDebug("Script", mp)
+
+	if script, ok := mp["Script"].(map[string]any); ok {
+		logger.LogDebug("Script", script)
+
+		task := func() (any, error) {
+			var ret []byte
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
+			return ret, err
+		}
+
+		f := promise.Start(task).OnSuccess(func(result any) {
+			logger.LogDebug("Success", result)
+		}).OnFailure(func(v any) {
+			logger.LogDebug("Failure", v)
+		})
+		result, err := f.Get()
+
+		if err != nil {
+			logger.LogDebug("Get", err)
+			return err
+		} else {
+			w.Write(result.([]byte))
+		}
+	} else {
+		return apperror.ErrInvalidType
+	}
+
+	return nil
+}
+
+func (h *handlerJrpc2) ExecTestTasks(w http.ResponseWriter, r *http.Request) error {
+	logger.LogDebug("Enter ExecTestTasks")
 	logger.LogDebug("soapRequestBytes", h.execTasks)
 
 	msg, err := io.ReadAll(r.Body)

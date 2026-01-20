@@ -25,9 +25,7 @@ func Middleware(h AppHandler) http.HandlerFunc {
 					return
 				} else if errors.Is(err, ErrUnAuthorized) {
 					w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-
 					w.WriteHeader(http.StatusUnauthorized)
-
 					w.Write(ErrUnAuthorized.Marshal())
 					return
 				}

@@ -71,7 +71,7 @@ func watchChannel(sn string, ch <-chan *response.RetScriptTask, wg *sync.WaitGro
 
 	for channelValue := range ch {
 		logger.LogDebug("watchChannel", "Channel '%s' with value: '%s'\n", sn, channelValue.Code)
-		response.EndTaskResponse[sn] = *channelValue
+		response.EndTaskResponse[sn] = append(response.EndTaskResponse[sn], *channelValue)
 		wg.Done()
 	}
 }
@@ -127,7 +127,7 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 	if resp, ok := response.EndTaskResponse[sn]; !ok {
 		return nil, ErrNotfoundTree
 	} else {
-		if ret, err := json.Marshal(resp.Code); err != nil {
+		if ret, err := json.Marshal(resp); err != nil {
 			return nil, err
 		} else {
 			return ret, nil

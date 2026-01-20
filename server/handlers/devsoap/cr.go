@@ -109,6 +109,7 @@ const (
 	FactoryReset
 	FwUpdate
 	ConfigUpdate
+	IntegralTest
 )
 
 func (t *tskType) String() string {
@@ -127,6 +128,8 @@ func (t *tskType) String() string {
 		return "FwUpdate"
 	case ConfigUpdate:
 		return "ConfigUpdate"
+	case IntegralTest:
+		return "IntegralTest"
 	default:
 		return "Unknown"
 	}
@@ -137,6 +140,8 @@ func getTaskType(mp map[string]any) (tskType, any) {
 		return Script, script_
 	} else if setList_, ok := mp["SetList"]; ok {
 		return SetList, setList_
+	} else if inttests_, ok := mp["IntegralTest"]; ok {
+		return IntegralTest, inttests_
 	} else if getList_, ok := mp["GetList"]; ok {
 		return Getlist, getList_
 	} else if reboot_, ok := mp["Reboot"]; ok {
@@ -245,19 +250,6 @@ func (h *handlerCR) AddTask(w http.ResponseWriter, r *http.Request) error {
 	case Script:
 		_, err = scripter.AddToScripter(sn, getScript, &tsk_db)
 
-		/*
-			case SetList:
-				err = h.execTasks.AddSetList(taskBody.(map[string]any))
-			case Getlist:
-				err = h.execTasks.AddGetList(taskBody.(map[string]any))
-			case Reboot:
-				err = h.execTasks.AddReboot(taskBody.(map[string]any))
-			case FactoryReset:
-				err = h.execTasks.AddFactoryReset(taskBody.(map[string]any))
-			case FwUpdate:
-				err = h.execTasks.AddFwUpdate(taskBody.(map[string]any))
-			case ConfigUpdate:
-				err = h.execTasks.AddConfigUpdate(taskBody.(map[string]any))*/
 	default:
 		return fmt.Errorf("failed task type: %v", err)
 	}

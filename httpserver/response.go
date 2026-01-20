@@ -30,10 +30,25 @@ func TransGetParameterValues(w http.ResponseWriter, req any, sp *soap.SoapSessio
 	}
 }
 
+func updateSessionInfo(sp *soap.SoapSessionInfo, req []taskmodel.SetParamValTask) {
+	for _, setList := range req {
+		switch setList.Name {
+		case soap.CR_U:
+			sp.ConnectionRequestUsername = setList.Value
+		case soap.CR_P:
+			sp.ConnectionRequestPassword = setList.Value
+		case soap.A_AUTHU:
+			sp.AuthUsername = setList.Value
+		case soap.A_AUTHP:
+			sp.AuthPassword = setList.Value
+		}
+	}
+}
 func TransSetParameterValues(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo) {
 	logger.LogDebug("TransSetParameterValues")
 
 	if setList, ok := req.([]taskmodel.SetParamValTask); ok {
+		updateSessionInfo(sp, setList)
 		responseEnvelope := soap.NewSetParameterValues(setList, sp.Env)
 		TransmitXMLReq(responseEnvelope, w, sp.ContentType, sp.AuthUsername, sp.AuthPassword)
 	}

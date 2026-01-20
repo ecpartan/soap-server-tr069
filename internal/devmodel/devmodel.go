@@ -36,10 +36,11 @@ func (r *ResponseTask) InsertRespList(l SoapResponse) {
 	r.RespList = append(r.RespList, l)
 	logger.LogDebug("InsertRespList", l, r.RespList, r.Serial, r.BtchSize)
 	if l.Method == "Fault" {
-		response.WriteInChannel(r.Serial, "404", "OK")
+		response.WriteInChannel(r.Serial, "404", r.Body)
 		logger.LogDebug("Error")
 	} else if len(r.RespList) == r.BtchSize || r.BtchSize == 0 {
-		response.WriteInChannel(r.Serial, "200", "OK")
+
+		response.WriteInChannel(r.Serial, "200", r.Body)
 		logger.LogDebug("InsertRespList22", r.RespList, r.Serial, r.BtchSize)
 	}
 

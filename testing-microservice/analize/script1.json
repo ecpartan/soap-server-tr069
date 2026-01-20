@@ -1,0 +1,20 @@
+{
+    "1": {
+      "Code":200
+    },
+    "2": {
+        "Code":200,
+        "Instance":"#2"
+    },
+    "3":{
+        "Code":200,
+        "FindInstance":"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#2."
+    },
+    "4": {
+      "Code":200
+    },
+    "5":{
+        "Code":200,
+        "FindValue":[{"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#2.Enable":"1"}, {"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#2.ExternalIPAddress":"192.168.152.31"}, {"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#2.AddressingType":"Static"}, {"InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.#2.SubnetMask": "255.255.255.240"}]
+    }
+}

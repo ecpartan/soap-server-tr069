@@ -16,6 +16,40 @@
   }
 }
 
+{
+  "Script": {
+    "1": {
+      "GetParameterValues": [
+        {
+          "Name": "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Name",
+        }
+      ]
+    }
+  ,
+  "Serial": "009012BD0001",
+  "Event": 6,
+  "Once": true
+  }
+}
+
+{
+  "Script": {
+    "1": {
+      "SetParameterValues": [
+        {
+          "name": "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Name",
+          "value": "pppoe",
+          "type": "xsd:string"
+        }
+      ]
+    }
+  ,
+  "Serial": "009012BD0001",
+  "Event": 6,
+  "Once": true
+  }
+}
+
 
 {
   "Script": {

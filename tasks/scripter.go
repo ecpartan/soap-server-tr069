@@ -82,6 +82,22 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 				}
 			}
 		}
+	case task.GetParameterValues:
+		{
+			task_params := t.Params.(taskmodel.GetParamValTask)
+
+			for k, v := range task_params.Name {
+				if ok, start, end := SubstringInstance(v, '#', '.'); ok {
+					replacing_trim := v[start:end]
+					logger.LogDebug("replacing_trim", replacing_trim)
+					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(rp.RespList) {
+						replace_trim := rp.RespList[i].Num
+						task_params.Name[k] = v[:start] + replace_trim + v[end:]
+						logger.LogDebug("tasks", task_params)
+					}
+				}
+			}
+		}
 	case task.AddObject:
 		{
 			task_params := t.Params.(taskmodel.AddTask)

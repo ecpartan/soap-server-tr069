@@ -7,6 +7,7 @@ import (
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
+	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/utils"
 )
 
@@ -288,7 +289,23 @@ func ParseTask(t map[string]any, tsk *entity.TaskViewDB) *Task {
 			logger.LogDebug("tsk", rettask)
 		case "TransferComplete":
 			rettask.Action = TransferComplete
+		case "SetAuthorization":
+			rettask.Action = SetParameterValues
+			settask := make([]taskmodel.SetParamValTask, 0)
+			arr := []string{soap.CR_U, soap.CR_P, soap.A_AUTHU, soap.A_AUTHP}
 
+			for _, v := range arr {
+				if rnd, err := utils.GenerateRandomString(13); err != nil {
+					logger.LogErr("GenerateRandomString", err)
+				} else {
+					settask = append(settask, taskmodel.SetParamValTask{
+						Name:  v,
+						Value: rnd,
+						Type:  "xsd:string",
+					})
+				}
+			}
+			rettask.Params = settask
 		}
 		return &rettask
 
