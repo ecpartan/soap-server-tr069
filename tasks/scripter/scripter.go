@@ -47,7 +47,7 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 	for _, k := range keys {
 		if curr_task, ok := scriptList[k]; ok {
 			if addtask, ok := curr_task.(map[string]any); ok {
-				find_task := task.ParseTask(addtask, tsk)
+				find_task := task.ParseTask(sn, addtask, tsk)
 				logger.LogDebug("Add task", find_task)
 				if find_task == nil {
 					return 0, errors.New("failed task")

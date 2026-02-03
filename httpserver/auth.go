@@ -10,7 +10,7 @@ import (
 
 func ExecRequest(url, user, pass string) error {
 	if url != "" {
-		logger.LogDebug("crURL", url)
+		logger.LogDebug("crURL", url, user, pass)
 		dr := dac.NewRequest(user, pass, "GET", url, "")
 		_, err := dr.Execute()
 		if err != nil {

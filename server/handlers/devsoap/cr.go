@@ -88,9 +88,9 @@ func (h *handlerCR) PerformConReq(w http.ResponseWriter, r *http.Request) error 
 
 	logger.LogDebug("mp", tree)
 	url := p.GetXMLValue(tree, soap.CR_URL)
-	mp := h.mapResponse.Get(sn)
-	user := mp.AuthUsername
-	pass := mp.AuthPassword
+	mp := h.mapResponse.GetRuntime(sn)
+	user := mp.ConnectionRequestUsername
+	pass := mp.ConnectionRequestPassword
 	if err = httpserver.ExecRequest(url, user, pass); err != nil {
 		return err
 	}
@@ -268,9 +268,9 @@ func (h *handlerCR) AddTask(w http.ResponseWriter, r *http.Request) error {
 	logger.LogDebug("mp", tree)
 	url := p.GetXMLValue(tree, soap.CR_URL)
 
-	m := h.mapResponse.Get(sn)
-	user := m.AuthUsername
-	pass := m.AuthPassword
+	m := h.mapResponse.GetRuntime(sn)
+	user := m.ConnectionRequestUsername
+	pass := m.ConnectionRequestPassword
 
 	if err = httpserver.ExecRequest(url, user, pass); err != nil {
 		return err

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
 	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/utils"
@@ -172,7 +173,7 @@ func createUploadTask(mapTask []any) []taskmodel.UploadTask {
 	return settask
 }
 
-func ParseTask(t map[string]any, tsk *entity.TaskViewDB) *Task {
+func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 	logger.LogDebug("parseTask", t)
 
 	for k, v := range t {
@@ -181,13 +182,21 @@ func ParseTask(t map[string]any, tsk *entity.TaskViewDB) *Task {
 
 		if !ok {
 			if arrayTask, ok := v.([]any); ok {
+				setarr := createSetParamTask(arrayTask)
 				if k == "SetParameterValues" {
+					mp := repository.GetCache().Get(sn)
+					if mp != nil {
+						for _, val := range setarr {
+							repository.SetValueInJSON(mp, val.Name, "Value", val.Value)
+							repository.SetValueInJSON(mp, val.Name, "Type", val.Type)
+						}
+					}
 					return &Task{
-						ID:        utils.NewID(),
+						ID:        tsk.ID,
 						Action:    SetParameterValues,
-						Params:    createSetParamTask(arrayTask),
-						Once:      true,
-						EventCode: 6,
+						Params:    setarr,
+						Once:      tsk.Once,
+						EventCode: tsk.EventCode,
 					}
 				}
 			}

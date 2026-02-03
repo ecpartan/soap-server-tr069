@@ -141,14 +141,10 @@ func typeConvert(s string) any {
 }
 
 type SoapSessionInfo struct {
-	ContentType               string
-	SoapVersion               []byte
-	Env                       EnvInfo
-	EventCodes                map[int]struct{}
-	AuthUsername              string
-	AuthPassword              string
-	ConnectionRequestUsername string
-	ConnectionRequestPassword string
+	ContentType string
+	SoapVersion []byte
+	Env         EnvInfo
+	EventCodes  map[int]struct{}
 }
 
 func NewSoapSessionInfo() *SoapSessionInfo {

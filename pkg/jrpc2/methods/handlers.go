@@ -111,9 +111,9 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 	}
 
 	url := p.GetXMLValue(tree, soap.CR_URL)
-	mp := devmap.GetDevMap().Get(sn)
+	mp := devmap.GetDevMap().GetRuntime(sn)
 
-	if err := httpserver.ExecRequest(url, mp.AuthUsername, mp.AuthPassword); err != nil {
+	if err := httpserver.ExecRequest(url, mp.ConnectionRequestUsername, mp.ConnectionRequestPassword); err != nil {
 		return nil, err
 	}
 

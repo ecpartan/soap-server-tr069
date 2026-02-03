@@ -136,9 +136,9 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any) soap
 			if sn := p.GetXMLString(ret, "DeviceId.SerialNumber"); sn != "" {
 				if authview, err := h.service.GetAuthDeviceBySn(sn); err == nil {
 					logger.LogDebug("authview", authview)
-					mp.AuthUsername = authview.Username
-					mp.AuthPassword = authview.Password
-					if !check_authorization(r, mp) {
+					mp_rt := h.mapResponse.GetRuntime(addr)
+
+					if !check_authorization(r, mp_rt.AuthUsername, mp_rt.AuthPassword) {
 						return soap.ResponseUnauthorized
 					}
 				} else {
@@ -149,9 +149,10 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any) soap
 				h.metrics.AddDevInst()
 				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
 				logger.LogDebug("paramlist", paramlist)
-				tasks.UpdateCacheBySerial(sn, paramlist, h.Cache, tasks.VALUES)
+				repository.UpdateCacheBySerial(sn, paramlist, h.Cache, repository.VALUES)
 				h.updateDeviceDB(sn, h.Cache, ret)
 
+				mp.EventCodes = soap.ParseEventCode(ret)
 				mp.Body = ret
 				mp.Serial = sn
 				status = soap.Inform
@@ -205,17 +206,15 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any) soap
 	}
 }
 
-func check_authorization(r *http.Request, mp *devmap.DevID) bool {
-	requiredUser := mp.AuthUsername
-	requiredPassword := mp.AuthPassword
+func check_authorization(r *http.Request, requiredusername, requiredpassword string) bool {
 
-	if requiredUser == "" || requiredPassword == "" {
+	if requiredusername == "" || requiredpassword == "" {
 		return true
 	}
 
 	user, password, hasAuth := r.BasicAuth()
 	logger.LogDebug("Basic auth: ", hasAuth, user, password)
-	if hasAuth && user == requiredUser && password == requiredPassword {
+	if hasAuth && user == requiredusername && password == requiredpassword {
 		return true
 	}
 
@@ -242,15 +241,16 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	}*/
 
 	logger.LogDebug("mv", err)
-
 	mp := h.mapResponse.Get(addr)
-	logger.LogDebug("mv", mp)
+	map_rt := h.mapResponse.GetRuntime(mp.Serial)
+
+	logger.LogDebug("UpdateParams", map_rt.ConnectionRequestUsername, map_rt.ConnectionRequestPassword, map_rt.AuthUsername, map_rt.AuthPassword)
 
 	if mv == nil {
 		logger.LogDebug("End session")
 		if tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks) {
 			response.CloseChannelBySn(mp.Serial)
-			h.mapResponse.Delete(addr)
+			h.mapResponse.Delete(addr) //TODO LRU cache
 		}
 
 		return nil, t
@@ -275,7 +275,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	case soap.FaultResponse:
 		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
-		httpserver.TransInformResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo)
+		httpserver.TransInformResponse(w, mp.SoapSessionInfo, map_rt)
 	case soap.GetParameterValuesResponse:
 		tasks.ParseGetResponse(mp, h.Cache)
 	case soap.SetParameterValuesResponse:
@@ -301,7 +301,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	case soap.FactoryResetResponse:
 		tasks.ParseFactoryResetResponse(mp)
 	case soap.TransferCompleteResponse:
-		httpserver.TransTransferCompleteResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo)
+		httpserver.TransTransferCompleteResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo, map_rt)
 		//tasks.ParseTransferCompleteResponse(mp)
 	default:
 
@@ -310,6 +310,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	if paramType != soap.Inform {
 		tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks)
 	}
+	h.mapResponse.Set(addr, *mp)
 
 	return nil, t
 }

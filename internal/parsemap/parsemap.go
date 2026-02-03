@@ -6,7 +6,6 @@ import (
 
 	"github.com/clbanning/mxj/v2"
 	logger "github.com/ecpartan/soap-server-tr069/log"
-	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 )
 
 func ConvertXMLtoMap(in []byte) (map[string]any, error) {
@@ -64,26 +63,6 @@ func GetXMLMap(xmlMap any, key string) map[string]any {
 	return ret
 }
 
-func ClearCacheNodes(sn string, lst []string) {
-	if len(lst) == 0 {
-		return
-	}
-	logger.LogDebug("Clear cache nodes: ", lst)
-
-	tree := repository.GetCache().Get(sn)
-
-	if tree == nil {
-		return
-	}
-
-	for _, v := range lst {
-		DeleteXML(tree, v)
-	}
-
-	logger.LogDebug("mp", tree)
-
-	repository.GetCache().Set(sn, tree)
-}
 func DeleteXML(xmlMap any, key string) {
 	strs := strings.Split(key, ".")
 
@@ -99,7 +78,8 @@ func DeleteXML(xmlMap any, key string) {
 			delete(mp, strs[0])
 		}
 	}
-	for i := 0; i < len(strs)-1; i++ {
+
+	for i := range len(strs) - 1 {
 		if i == len(strs)-2 {
 			logger.LogDebug("mp", reflect.TypeOf(xmlMap))
 			logger.LogDebug("mp", xmlMap)

@@ -8,10 +8,11 @@ import (
 	"sync"
 
 	"github.com/ecpartan/soap-server-tr069/httpserver"
+	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
-	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/soap"
 	"github.com/ecpartan/soap-server-tr069/tasks/task"
 	"github.com/ecpartan/soap-server-tr069/tasks/taskexec"
@@ -127,14 +128,14 @@ func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp 
 	} else {
 		if t.Action == task.GetParameterValues {
 			logger.LogDebug("GetParameterValues", t.Params.(taskmodel.GetParamValTask))
-			p.ClearCacheNodes(mp.Serial, t.Params.(taskmodel.GetParamValTask).Name)
+			repository.ClearCacheNodes(mp.Serial, t.Params.(taskmodel.GetParamValTask).Name)
 		}
 		ExecuteTask(t, wg, mp, sp, w)
 	}
 	return false
 }
 
-var map_tasks = map[task.TaskRequestType]func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo){
+var map_tasks = map[task.TaskRequestType]func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo, devrun *devmap.DevRun){
 	task.GetParameterValues:     httpserver.TransGetParameterValues,
 	task.SetParameterValues:     httpserver.TransSetParameterValues,
 	task.AddObject:              httpserver.TransAddObject,
@@ -150,7 +151,7 @@ var map_tasks = map[task.TaskRequestType]func(w http.ResponseWriter, req any, sp
 	task.TransferComplete:       httpserver.TransTransferCompleteResponse,
 }
 
-func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo), t task.Task, rp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup, w http.ResponseWriter) {
+func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo, devrun *devmap.DevRun), t task.Task, rp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup, w http.ResponseWriter) {
 	logger.LogDebug("executeResponsetask1", rp.RespList)
 
 	wg.Add(1)
@@ -167,7 +168,10 @@ func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap
 	logger.LogDebug("executeResponsetask2", t)
 	go func(t task.Task) {
 		logger.LogDebug("executeResponsetask2", t)
-		task_func(w, t.Params, sp)
+		curr_map := devmap.GetDevMap()
+		rt_map := curr_map.GetRuntime(rp.Serial)
+		task_func(w, t.Params, sp, rt_map)
+		curr_map.SetRuntime(rp.Serial, *rt_map)
 
 		wg.Done()
 
