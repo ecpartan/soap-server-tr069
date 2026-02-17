@@ -69,6 +69,7 @@ require (
 	github.com/creachadair/jrpc2 v1.3.1
 	github.com/fanliao/go-promise v0.0.0-20141029170127-1890db352a72
 	github.com/go-sql-driver/mysql v1.9.2
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/jackc/pgx v3.6.2+incompatible

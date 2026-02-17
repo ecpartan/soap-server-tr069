@@ -35,6 +35,7 @@ func (r *ResponseTask) InsertRespList(l SoapResponse) {
 	r.mu.Lock()
 	r.RespList = append(r.RespList, l)
 	logger.LogDebug("InsertRespList", l, r.RespList, r.Serial, r.BtchSize)
+
 	if l.Method == "Fault" {
 		response.WriteInChannel(r.Serial, "404", r.Body)
 		logger.LogDebug("Error")

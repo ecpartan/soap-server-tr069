@@ -54,6 +54,19 @@ func SubstringInstance(message string, start, end byte) (bool, int, int) {
 	return false, -1, -1
 }
 
+func SubstrByTooken(str string, token string, replace_arr []string) string {
+	if ok, start, end := SubstringInstance(str, '#', '.'); ok {
+		replacing_trim := str[start:end]
+		logger.LogDebug("replacing_trim", replacing_trim)
+		if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(replace_arr) {
+			replace_trim := replace_arr[i]
+			return str[:start] + replace_trim + str[end:]
+		}
+	}
+
+	return ""
+}
+
 func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 
 	logger.LogDebug("PrepareListTask", rp.RespList)
@@ -61,6 +74,11 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 
 	if len(rp.RespList) == 0 {
 		return t
+	}
+
+	lst_num := []string{}
+	for _, v := range rp.RespList {
+		lst_num = append(lst_num, v.Num)
 	}
 
 	switch t.Action {
@@ -71,15 +89,8 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 			logger.LogDebug("tasks", task_params)
 
 			for k, v := range task_params {
-				str := v.Name
-				if ok, start, end := SubstringInstance(str, '#', '.'); ok {
-					replacing_trim := str[start:end]
-					logger.LogDebug("replacing_trim", replacing_trim)
-					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(rp.RespList) {
-						replace_trim := rp.RespList[i].Num
-						task_params[k].Name = str[:start] + replace_trim + str[end:]
-						logger.LogDebug("tasks", task_params)
-					}
+				if str := SubstrByTooken(v.Name, "#", lst_num); str != "" {
+					task_params[k].Name = str
 				}
 			}
 		}
@@ -88,27 +99,16 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 			task_params := t.Params.(taskmodel.GetParamValTask)
 
 			for k, v := range task_params.Name {
-				if ok, start, end := SubstringInstance(v, '#', '.'); ok {
-					replacing_trim := v[start:end]
-					logger.LogDebug("replacing_trim", replacing_trim)
-					if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(rp.RespList) {
-						replace_trim := rp.RespList[i].Num
-						task_params.Name[k] = v[:start] + replace_trim + v[end:]
-						logger.LogDebug("tasks", task_params)
-					}
+				if str := SubstrByTooken(v, "#", lst_num); str != "" {
+					task_params.Name[k] = str
 				}
 			}
 		}
 	case task.AddObject:
 		{
 			task_params := t.Params.(taskmodel.AddTask)
-			str := task_params.Name
-			if ok, start, end := SubstringInstance(str, '#', '.'); ok {
-				replacing_trim := str[start:end]
-				if i, err := strconv.Atoi(replacing_trim[1:]); err == nil && i < len(rp.RespList) {
-					replace_trim := rp.RespList[i].Num
-					task_params.Name = str[:start] + replace_trim + str[end:]
-				}
+			if str := SubstrByTooken(task_params.Name, "#", lst_num); str != "" {
+				task_params.Name = str
 			}
 		}
 	}
@@ -123,15 +123,14 @@ func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp 
 		logger.LogDebug("task is nil")
 
 		w.WriteHeader(http.StatusNoContent)
-
 		return true
-	} else {
-		if t.Action == task.GetParameterValues {
-			logger.LogDebug("GetParameterValues", t.Params.(taskmodel.GetParamValTask))
-			repository.ClearCacheNodes(mp.Serial, t.Params.(taskmodel.GetParamValTask).Name)
-		}
-		ExecuteTask(t, wg, mp, sp, w)
 	}
+	if t.Action == task.GetParameterValues {
+		logger.LogDebug("GetParameterValues", t.Params.(taskmodel.GetParamValTask))
+		repository.ClearCacheNodes(mp.Serial, t.Params.(taskmodel.GetParamValTask).Name)
+	}
+	ExecuteTask(t, wg, mp, sp, w)
+
 	return false
 }
 
@@ -170,8 +169,8 @@ func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap
 		logger.LogDebug("executeResponsetask2", t)
 		curr_map := devmap.GetDevMap()
 		rt_map := curr_map.GetRuntime(rp.Serial)
-		task_func(w, t.Params, sp, rt_map)
-		curr_map.SetRuntime(rp.Serial, *rt_map)
+		task_func(w, t.Params, sp, &rt_map)
+		curr_map.SetRuntime(rp.Serial, rt_map)
 
 		wg.Done()
 

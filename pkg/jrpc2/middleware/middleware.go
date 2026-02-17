@@ -200,6 +200,7 @@ func (h *handlerJrpc2) ExecTestTasks(w http.ResponseWriter, r *http.Request) err
 	logger.LogDebug("Script", mp)
 
 	if script, ok := mp["Script"].(map[string]any); ok {
+
 		logger.LogDebug("Script", script)
 
 		task := func() (any, error) {

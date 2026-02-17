@@ -356,6 +356,7 @@ var execScriptCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		fmt.Println(body)
 	},
 }

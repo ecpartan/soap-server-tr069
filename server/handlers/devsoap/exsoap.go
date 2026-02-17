@@ -12,7 +12,6 @@ import (
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/pkg/httplogger"
-	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/methods/response"
 	"github.com/ecpartan/soap-server-tr069/pkg/monitoring"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/repository/db/domain/entity"
@@ -104,7 +103,7 @@ func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform 
 	}
 }
 
-func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any) soap.TaskResponseType {
+func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any, mp *devmap.DevID) soap.TaskResponseType {
 	logger.LogDebug("ParseXML", mv)
 	if mv == nil {
 		return soap.ResponseUndefinded
@@ -115,9 +114,6 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any) soap
 		logger.LogDebug("envelope is not parseMapXML")
 		return soap.ResponseUndefinded
 	} else {
-
-		mp := h.mapResponse.Get(addr)
-
 		logger.LogDebug("mapresponse", mp)
 		mp.Env = soap.PrepareHeaderInfo(envelope)
 
@@ -241,7 +237,11 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	}*/
 
 	logger.LogDebug("mv", err)
-	mp := h.mapResponse.Get(addr)
+	mp, ok := h.mapResponse.Get(addr)
+	if !ok {
+		mp = h.mapResponse.NewSet(addr)
+	}
+
 	map_rt := h.mapResponse.GetRuntime(mp.Serial)
 
 	logger.LogDebug("UpdateParams", map_rt.ConnectionRequestUsername, map_rt.ConnectionRequestPassword, map_rt.AuthUsername, map_rt.AuthPassword)
@@ -249,14 +249,18 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	if mv == nil {
 		logger.LogDebug("End session")
 		if tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks) {
-			response.CloseChannelBySn(mp.Serial)
+			//response.CloseChannelBySn(mp.Serial)
+			logger.LogDebug("mapresponse1", addr)
+
+			logger.LogDebug("mapresponse1", h.mapResponse)
+
 			h.mapResponse.Delete(addr) //TODO LRU cache
 		}
 
 		return nil, t
 	}
 
-	paramType := h.parseXML(r, addr, mv)
+	paramType := h.parseXML(r, addr, mv, mp)
 
 	if paramType == soap.ResponseUnauthorized {
 		return apperror.ErrUnAuthorized, t
@@ -266,7 +270,6 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		return err, t
 	}
 
-	logger.LogDebug("mapresponse", h.mapResponse)
 	logger.LogDebug("found soap type", paramType, mp.Body)
 
 	switch paramType {
@@ -275,7 +278,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	case soap.FaultResponse:
 		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
-		httpserver.TransInformResponse(w, mp.SoapSessionInfo, map_rt)
+		httpserver.TransInformResponse(w, mp.SoapSessionInfo, &map_rt)
 	case soap.GetParameterValuesResponse:
 		tasks.ParseGetResponse(mp, h.Cache)
 	case soap.SetParameterValuesResponse:
@@ -301,7 +304,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	case soap.FactoryResetResponse:
 		tasks.ParseFactoryResetResponse(mp)
 	case soap.TransferCompleteResponse:
-		httpserver.TransTransferCompleteResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo, map_rt)
+		httpserver.TransTransferCompleteResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo, &map_rt)
 		//tasks.ParseTransferCompleteResponse(mp)
 	default:
 

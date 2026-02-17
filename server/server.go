@@ -103,7 +103,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 
 	once.Do(func() {
 		Instance = &Server{
-			mapResponse: devmap.NewDevMap(),
+			mapResponse: devmap.GetDevMap(),
 			router:      router,
 			cfg:         cfg,
 			service:     serviceDevice,

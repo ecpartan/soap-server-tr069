@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
+	logger "github.com/ecpartan/soap-server-tr069/log"
 	"github.com/ecpartan/soap-server-tr069/soap"
 )
 
@@ -26,10 +27,12 @@ type DevRun struct {
 	ConnectionRequestPassword string
 }
 
-var d *DevMap
+var (
+	d    *DevMap
+	once sync.Once
+)
 
-func NewDevMap() *DevMap {
-	once := &sync.Once{}
+func GetDevMap() *DevMap {
 	once.Do(func() {
 		d = &DevMap{
 			devs_session: make(map[string]DevID),
@@ -40,28 +43,46 @@ func NewDevMap() *DevMap {
 	return d
 }
 
-func GetDevMap() *DevMap {
-	return d
-}
-func (d *DevMap) Get(key string) *DevID {
+func (d *DevMap) Get(key string) (*DevID, bool) {
 	d.RLock()
 	defer d.RUnlock()
 
+	ret, ok := d.devs_session[key]
+	return &ret, ok
+	/*
+		if ret, ok := d.devs_session[key]; ok {
+			return &ret
+		} else {
+			tmp := DevID{
+				SoapSessionInfo: soap.NewSoapSessionInfo(),
+				ResponseTask:    devmodel.NewResponseTask(),
+			}
+			//d.devs_session[key] = tmp
+			return &tmp
+		}*/
+}
+
+func (d *DevMap) NewSet(key string) *DevID {
+	d.Lock()
+	defer d.Unlock()
+
+	d.devs_session[key] = DevID{
+		SoapSessionInfo: soap.NewSoapSessionInfo(),
+		ResponseTask:    devmodel.NewResponseTask(),
+	}
+
 	if ret, ok := d.devs_session[key]; ok {
 		return &ret
-	} else {
-		tmp := DevID{
-			SoapSessionInfo: soap.NewSoapSessionInfo(),
-			ResponseTask:    devmodel.NewResponseTask(),
-		}
-		d.devs_session[key] = tmp
-		return &tmp
 	}
+
+	return nil
 }
 func (d *DevMap) Set(key string, value DevID) {
 	d.Lock()
 	defer d.Unlock()
 	d.devs_session[key] = value
+	logger.LogDebug("Setted", key, d.devs_session)
+
 }
 
 func (d *DevMap) Delete(key string) {
@@ -71,17 +92,16 @@ func (d *DevMap) Delete(key string) {
 		close(d.devs_session[key].RespChan)
 	}
 	delete(d.devs_session, key)
+	logger.LogDebug("Deleted", key, d.devs_session)
 }
 
-func (d *DevMap) GetRuntime(sn string) *DevRun {
+func (d *DevMap) GetRuntime(sn string) DevRun {
 	d.RLock()
 	defer d.RUnlock()
 	if ret, ok := d.devs_runtime[sn]; ok {
-		return &ret
+		return ret
 	}
-	tmp := DevRun{}
-	d.devs_runtime[sn] = tmp
-	return &tmp
+	return DevRun{}
 }
 
 func (d *DevMap) SetRuntime(sn string, value DevRun) {

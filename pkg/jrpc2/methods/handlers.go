@@ -70,7 +70,7 @@ func watchChannel(sn string, ch <-chan *response.RetScriptTask, wg *sync.WaitGro
 	logger.LogDebug("Watching channel: ", sn)
 
 	for channelValue := range ch {
-		logger.LogDebug("watchChannel", "Channel '%s' with value: '%s'\n", sn, channelValue.Code)
+		logger.LogDebug("watchChannel", "Channel: ", sn, " with value: ", channelValue.Code)
 		response.EndTaskResponse[sn] = append(response.EndTaskResponse[sn], *channelValue)
 		wg.Done()
 	}
@@ -130,6 +130,7 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 		if ret, err := json.Marshal(resp); err != nil {
 			return nil, err
 		} else {
+			response.EndTaskResponse[sn] = nil
 			return ret, nil
 		}
 	}
