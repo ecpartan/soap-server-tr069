@@ -66,7 +66,7 @@ func (c *Cache) Get(key string) map[string]any {
 
 func (c *Cache) Set(key string, value any) {
 	ret, _ := json.Marshal(value)
-	logger.LogDebug("Setting cache value: %s", string(ret))
+	//logger.LogDebug("Setting cache value: %s", string(ret))
 	c.Lock()
 	defer c.Unlock()
 	err := c.c.Put(key, ret)

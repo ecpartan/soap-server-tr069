@@ -302,11 +302,10 @@ func showPopupExecScript(rootView rui.View) {
 
 			task := func() (any, error) {
 				var ret []byte
-				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 				defer cancel()
 				err := jrcp2server.Instance.Server.Client.CallResult(ctx, methods.MethodAddScript, mwdto.Mwdto{script, tasker.GetTasker().ExecTasks}, &ret)
 				return ret, err
-
 			}
 
 			f := promise.Start(task).OnSuccess(func(result any) {

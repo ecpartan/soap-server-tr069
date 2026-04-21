@@ -133,7 +133,7 @@ func (s *TasksStorage) List() ([]*entity.Task, error) {
 }
 
 func (s *TasksStorage) ListWithOP() ([]*entity.TaskViewDB, error) {
-	stmt, err := s.db.Query("SELECT task.id, task.status, task.event_code, task.once, task_op.body FROM task LEFT JOIN task_op ON task.task_op_id = task_op.id;")
+	stmt, err := s.db.Query("SELECT task.id, task.status, task.event_code, task.once, task.waitevent, task_op.body FROM task LEFT JOIN task_op ON task.task_op_id = task_op.id;")
 
 	if err != nil {
 		return nil, err

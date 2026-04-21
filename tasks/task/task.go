@@ -37,6 +37,7 @@ type Task struct {
 	Params    any
 	EventCode int
 	Once      bool
+	WaitEvent int
 }
 
 func createSetParamTask(mapTask []any) []taskmodel.SetParamValTask {
@@ -173,8 +174,12 @@ func createUploadTask(mapTask []any) []taskmodel.UploadTask {
 	return settask
 }
 
+func newTask(id utils.ID, eventcode int, once bool, waitEvent int) *Task {
+	return &Task{ID: id, EventCode: eventcode, Once: once, WaitEvent: waitEvent}
+}
+
 func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
-	logger.LogDebug("parseTask", t)
+	logger.LogDebug("parseTask", t, tsk)
 
 	for k, v := range t {
 		logger.LogDebug("type task", reflect.TypeOf(v), k)
@@ -191,33 +196,53 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 							repository.SetValueInJSON(mp, val.Name, "Type", val.Type)
 						}
 					}
-					return &Task{
-						ID:        tsk.ID,
-						Action:    SetParameterValues,
-						Params:    setarr,
-						Once:      tsk.Once,
-						EventCode: tsk.EventCode,
+					rettask := newTask(tsk.ID, tsk.EventCode, tsk.Once, tsk.WaitEvent)
+					rettask.Action = SetParameterValues
+					rettask.Params = setarr
+
+					logger.LogDebug("type task2", reflect.TypeOf(t["WaitEvent"]))
+
+					if wt, ok := t["WaitEvent"]; ok {
+						if wtf, ok := wt.(float64); !ok {
+							rettask.WaitEvent = -1
+						} else {
+							rettask.WaitEvent = int(wtf)
+						}
 					}
+
+					return rettask
 				}
 			}
 			continue
 		}
 
-		rettask := Task{ID: tsk.ID, Once: tsk.Once, EventCode: tsk.EventCode}
+		waitevent := -1
+		if wt, ok := t["WaitEvent"]; ok {
+			if wtf, ok := wt.(float64); ok {
+				waitevent = int(wtf)
+			}
+		} else {
+			waitevent = tsk.WaitEvent
+		}
+
+		rettask := newTask(tsk.ID, tsk.EventCode, tsk.Once, waitevent)
 
 		switch k {
 		case "AddObject":
 			rettask.Action = AddObject
-			rettask.Params = taskmodel.AddTask{
-				Name: mapTask["Name"].(string),
+			if n, ok := mapTask["Name"].(string); ok {
+				rettask.Params = taskmodel.AddTask{Name: n}
+			} else {
+				return nil
 			}
 
 		case "DeleteObject":
 			rettask.Action = DeleteObject
-			rettask.Params = taskmodel.DeleteTask{
-				Name: mapTask["Name"].(string),
+			if n, ok := mapTask["Name"].(string); ok {
+				rettask.Params = taskmodel.DeleteTask{Name: n}
+			} else {
+				return nil
 			}
-
 		case "GetParameterValues":
 			var lst []string
 			if mapN, ok := mapTask["Name"].([]any); ok {
@@ -228,17 +253,15 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 				lst = mapTask["Name"].([]string)
 			}
 			rettask.Action = GetParameterValues
-			rettask.Params = taskmodel.GetParamValTask{
-				Name: lst,
-			}
+			rettask.Params = taskmodel.GetParamValTask{Name: lst}
 		case "GetParameterNames":
 			logger.LogDebug("GetParameterNames", mapTask["Name"], reflect.TypeOf(mapTask["Name"]))
 			logger.LogDebug("GetParameterNames", mapTask["NextLevel"], reflect.TypeOf(mapTask["NextLevel"]))
+			rettask.Action = GetParameterNames
 
 			if nms, ok := mapTask["Name"].(string); ok {
 				if lvls, ok := mapTask["NextLevel"].(float64); ok {
 					logger.LogDebug("GetParameterNames", nms, lvls)
-					rettask.Action = GetParameterNames
 					rettask.Params = taskmodel.GetParamNamesTask{
 						ParameterPath: nms,
 						NextLevel:     int(lvls),
@@ -259,8 +282,9 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 				Name: lst,
 			}
 		case "SetParameterAttributes":
+			rettask.Action = SetParameterAttributes
+
 			if arrayTask, ok := v.([]any); ok {
-				rettask.Action = SetParameterAttributes
 				rettask.Params = createSetParameterAttributesTask(arrayTask)
 			} else {
 				return nil
@@ -273,6 +297,7 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 			rettask.Action = FactoryReset
 		case "Download":
 			rettask.Action = Download
+
 			params := taskmodel.DownloadTask{}
 
 			if nms, ok := mapTask["file"].(string); ok {
@@ -282,10 +307,11 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 				params.URL = nms
 			}
 			rettask.Params = params
-			logger.LogDebug("tsk", rettask)
 
 		case "Upload":
 			logger.LogDebug("Upload", v, reflect.TypeOf(v))
+			rettask.Action = Upload
+
 			params := taskmodel.UploadTask{}
 			if nms, ok := mapTask["file"].(string); ok {
 				params.FileType = nms
@@ -293,13 +319,11 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 			if nms, ok := mapTask["url"].(string); ok {
 				params.URL = nms
 			}
-			rettask.Action = Upload
 			rettask.Params = params
-			logger.LogDebug("tsk", rettask)
 		case "TransferComplete":
 			rettask.Action = TransferComplete
+
 		case "SetAuthorization":
-			rettask.Action = SetParameterValues
 			settask := make([]taskmodel.SetParamValTask, 0)
 			arr := []string{soap.CR_U, soap.CR_P, soap.A_AUTHU, soap.A_AUTHP}
 
@@ -314,10 +338,11 @@ func ParseTask(sn string, t map[string]any, tsk *entity.TaskViewDB) *Task {
 					})
 				}
 			}
+			rettask.Action = SetParameterValues
 			rettask.Params = settask
 		}
-		return &rettask
 
+		return rettask
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ecpartan/soap-server-tr069/httpserver"
@@ -227,7 +228,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		return fmt.Errorf("could not read POST: %v", err), t
 	}
 
-	addr := r.RemoteAddr
+	addr := strings.Split(r.RemoteAddr, ":")[0]
 
 	logger.LogDebug("PerformSoap", string(soapRequestBytes))
 
@@ -236,9 +237,10 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		return fmt.Errorf("failed XML: %v", err)
 	}*/
 
-	logger.LogDebug("mv", err)
 	mp, ok := h.mapResponse.Get(addr)
 	if !ok {
+		logger.LogDebug("NewMap", mp)
+
 		mp = h.mapResponse.NewSet(addr)
 	}
 
@@ -279,6 +281,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		tasks.ParseFaultResponse(mp)
 	case soap.Inform:
 		httpserver.TransInformResponse(w, mp.SoapSessionInfo, &map_rt)
+		tasks.CheckWaitEvent(mp)
 	case soap.GetParameterValuesResponse:
 		tasks.ParseGetResponse(mp, h.Cache)
 	case soap.SetParameterValuesResponse:
@@ -313,6 +316,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	if paramType != soap.Inform {
 		tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks)
 	}
+	logger.LogDebug("SetNewW", mp.WaitEvent)
 	h.mapResponse.Set(addr, *mp)
 
 	return nil, t

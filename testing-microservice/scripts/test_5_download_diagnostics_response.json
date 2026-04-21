@@ -1,0 +1,13 @@
+{
+  "Script": {
+    "1":{
+        "GetParameterValues":
+        {
+            "Name":["InternetGatewayDevice.DownloadDiagnostics."]
+        }
+    },
+    "Serial": "009012BD0001",
+    "Event": 6,
+    "Once": true
+  }
+} 

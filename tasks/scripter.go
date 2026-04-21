@@ -33,6 +33,11 @@ func NextTask(mp *devmodel.ResponseTask, addr string, evcodes map[int]struct{}, 
 			continue
 		}
 		ret := task
+		if task.WaitEvent != -1 {
+			mp.WaitEvent = task.WaitEvent
+			logger.LogDebug("NextTask", mp.WaitEvent)
+
+		}
 		e.DeleteTaskByID(mp.Serial, task.ID)
 
 		return ret
@@ -79,6 +84,10 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 	lst_num := []string{}
 	for _, v := range rp.RespList {
 		lst_num = append(lst_num, v.Num)
+	}
+
+	if t.WaitEvent != -1 {
+		rp.WaitEvent = t.WaitEvent
 	}
 
 	switch t.Action {
@@ -155,16 +164,13 @@ func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap
 
 	wg.Add(1)
 
-	if rp.RespChan == nil {
-		rp.RespChan = make(chan devmodel.SoapResponse)
-	} else {
+	if rp.RespChan != nil {
 		close(rp.RespChan)
-		rp.RespChan = make(chan devmodel.SoapResponse)
 		logger.LogDebug("Channel is not empty")
 	}
+	rp.RespChan = make(chan devmodel.SoapResponse)
 
 	t = PrepareListTask(t, rp)
-	logger.LogDebug("executeResponsetask2", t)
 	go func(t task.Task) {
 		logger.LogDebug("executeResponsetask2", t)
 		curr_map := devmap.GetDevMap()

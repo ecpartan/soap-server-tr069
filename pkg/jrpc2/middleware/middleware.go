@@ -103,7 +103,7 @@ func (h *handlerJrpc2) ExecFrontReq(w http.ResponseWriter, r *http.Request) erro
 
 					task := func() (any, error) {
 						var ret []byte
-						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+						ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 						defer cancel()
 						err := jrcp2server.Instance.Server.Client.CallResult(ctx, req.Method, mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
 						return ret, err
@@ -155,7 +155,7 @@ func (h *handlerJrpc2) ExecFrontWithoutJRPC2(w http.ResponseWriter, r *http.Requ
 
 		task := func() (any, error) {
 			var ret []byte
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 			defer cancel()
 			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
 			return ret, err
@@ -205,7 +205,7 @@ func (h *handlerJrpc2) ExecTestTasks(w http.ResponseWriter, r *http.Request) err
 
 		task := func() (any, error) {
 			var ret []byte
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 			defer cancel()
 			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
 			return ret, err

@@ -49,7 +49,6 @@ func updateSessionInfo(devrun *devmap.DevRun, req []taskmodel.SetParamValTask) {
 			devrun.AuthPassword = setList.Value
 		}
 	}
-
 }
 
 func TransSetParameterValues(w http.ResponseWriter, req any, sp *soap.SoapSessionInfo, devrun *devmap.DevRun) {

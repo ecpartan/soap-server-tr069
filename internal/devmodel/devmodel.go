@@ -14,20 +14,22 @@ type SoapResponse struct {
 }
 
 type ResponseTask struct {
-	RespChan chan SoapResponse
-	Serial   string
-	RespList []SoapResponse
-	BtchSize int
-	Body     map[string]any
-	mu       sync.RWMutex
+	RespChan  chan SoapResponse
+	Serial    string
+	RespList  []SoapResponse
+	BtchSize  int
+	Body      map[string]any
+	mu        sync.RWMutex
+	WaitEvent int
 }
 
 func NewResponseTask() *ResponseTask {
 	return &ResponseTask{
-		RespChan: nil,
-		Serial:   "",
-		RespList: make([]SoapResponse, 0, 10),
-		Body:     nil,
+		RespChan:  nil,
+		Serial:    "",
+		RespList:  make([]SoapResponse, 0, 10),
+		Body:      nil,
+		WaitEvent: -1,
 	}
 }
 

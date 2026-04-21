@@ -6,6 +6,7 @@ import (
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
+	"github.com/ecpartan/soap-server-tr069/utils/semaphore"
 )
 
 func ParseFaultResponse(mp *devmap.DevID) {
@@ -63,13 +64,37 @@ func ParseSetResponse(mp *devmap.DevID) {
 	}
 
 	if status := p.GetXMLString(mp.Body, "Status"); status == "1" || status == "0" {
-		mp.RespChan <- devmodel.SoapResponse{Code: status, Method: "Set"}
+
+		go func() {
+			logger.LogDebug("PSR", mp.WaitEvent)
+
+			if mp.WaitEvent > -1 {
+				semaphore.Acquire(mp.Serial)
+			} else {
+				mp.RespChan <- devmodel.SoapResponse{Code: status, Method: "Set"}
+			}
+		}()
 		return
 	}
 
 	mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Set"}
 }
 
+func CheckWaitEvent(mp *devmap.DevID) {
+	logger.LogDebug("CheckWaitEvent", mp.EventCodes, mp.WaitEvent)
+
+	if mp.WaitEvent > -1 {
+		if _, ok := mp.EventCodes[mp.WaitEvent]; ok {
+
+			err := semaphore.Release(mp.Serial)
+			if err != nil {
+				logger.LogErr("CheckWaitEvent", err)
+			}
+			mp.WaitEvent = -1
+			mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Get"}
+		}
+	}
+}
 func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 
 	logger.LogDebug("ParseGetResponse")
@@ -82,8 +107,15 @@ func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 		return
 	}
 	repository.UpdateCacheBySerial(mp.Serial, paramlist, l, repository.VALUES)
+	go func() {
+		logger.LogDebug("PGR", mp.WaitEvent)
 
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Get"}
+		if mp.WaitEvent > -1 {
+			semaphore.Acquire(mp.Serial)
+		} else {
+			mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Get"}
+		}
+	}()
 }
 
 func ParseGetRPCMethodsResponse(mp *devmap.DevID) {

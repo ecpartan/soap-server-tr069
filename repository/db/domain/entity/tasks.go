@@ -15,6 +15,7 @@ type Task struct {
 	Result    string    `db:"result"`
 	EventCode int       `db:"event_code"`
 	Once      bool      `db:"once"`
+	WaitEvent int       `db:"wait_event"`
 	TaskOpId  utils.ID  `db:"task_op_id"`
 	DeviceId  utils.ID  `db:"device_id"`
 }
@@ -31,15 +32,17 @@ type TaskViewDB struct {
 	EventCode int
 	Once      bool
 	Body      string
+	WaitEvent int
 }
 
-func NewTaskViewDB(id utils.ID, status string, eventCode int, once bool, body string) *TaskViewDB {
+func NewTaskViewDB(id utils.ID, status string, eventCode int, once bool, body string, waitevent int) *TaskViewDB {
 	return &TaskViewDB{
 		ID:        id,
 		Status:    status,
 		EventCode: eventCode,
 		Once:      once,
 		Body:      body,
+		WaitEvent: waitevent,
 	}
 }
 

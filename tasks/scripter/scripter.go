@@ -26,6 +26,7 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 	if tsk == nil {
 		var oncebool bool
 		var eventint int
+		var waitevent int
 
 		if once, ok := scriptList["Once"]; ok {
 			if oncebool, ok = once.(bool); !ok {
@@ -41,7 +42,7 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 			}
 		}
 
-		tsk = entity.NewTaskViewDB(utils.NewID(), "Pending", eventint, oncebool, string(utils.MapToString(scriptList)))
+		tsk = entity.NewTaskViewDB(utils.NewID(), "Pending", eventint, oncebool, string(utils.MapToString(scriptList)), waitevent)
 	}
 
 	for _, k := range keys {

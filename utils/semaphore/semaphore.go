@@ -38,7 +38,7 @@ func Acquire(sn string) error {
 	if semaphore, ok := SemMapInstance[sn]; !ok {
 		SemMapInstance[sn] = Semaphore{
 			sem:     make(chan struct{}, 1),
-			timeout: 10 * time.Second,
+			timeout: 40 * time.Second,
 		}
 		semaphore = SemMapInstance[sn]
 		return semaphore.Acquire()

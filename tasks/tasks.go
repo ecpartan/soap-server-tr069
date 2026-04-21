@@ -32,7 +32,9 @@ func InitTasks(s *storage.Storage) *taskexec.TaskExec {
 
 	lsts, err := tskStatorage.ListWithOP()
 	if err != nil {
-		return nil
+		logger.LogDebug("Err", err)
+
+		return exec
 	}
 
 	for _, tsk := range lsts {

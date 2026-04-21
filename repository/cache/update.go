@@ -147,7 +147,7 @@ func updateDeviceValues(paramlist []any, mp map[string]any) map[string]any {
 		}
 	}
 
-	logger.LogDebug("updateDeviceValues", mp)
+	//logger.LogDebug("updateDeviceValues", mp)
 	return mp
 }
 

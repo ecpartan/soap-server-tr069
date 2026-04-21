@@ -1,6 +1,7 @@
 package soap
 
 import (
+	"reflect"
 	"strconv"
 
 	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
@@ -258,33 +259,52 @@ func ParseEventCode(mp map[string]any) map[int]struct{} {
 		return codes
 	}
 
-	logger.LogDebug("events", events)
-	if list_events, ok := events.(map[string]any); ok {
+	logger.LogDebug("evs", events, reflect.TypeOf(events))
 
-		for event, map_event := range list_events {
-			logger.LogDebug("event", map_event)
-			if event == "EventCode" {
+	var list_events []any
+	if evs, ok := events.(map[string]any); ok {
+		list_events = append(list_events, evs)
+	} else {
+		if evs, ok := events.([]any); ok {
+			list_events = evs
+		}
+	}
 
-				eventCode := p.GetXML(map_event, "#text").(string)
+	logger.LogDebug("evs", list_events)
+	for _, map_event := range list_events {
+		logger.LogDebug("evs", map_event, reflect.TypeOf(map_event))
 
-				switch eventCode {
-				case "0 BOOTSTRAP":
-					codes[0] = struct{}{}
-				case "1 BOOT":
-					codes[1] = struct{}{}
-				case "2 PERIODIC":
-					codes[2] = struct{}{}
-				case "3 SCHEDULED":
-					codes[3] = struct{}{}
-				case "4 VALUE CHANGE":
-					codes[4] = struct{}{}
-				case "6 CONNECTION REQUEST":
-					codes[6] = struct{}{}
-				case "7 TRANSFER COMPLETE":
-					codes[7] = struct{}{}
+		if curr_evs, ok := map_event.(map[string]any); ok {
+			for event, mp_event := range curr_evs {
+				logger.LogDebug("evs", mp_event, reflect.TypeOf(event))
+
+				if event == "EventCode" {
+
+					eventCode := p.GetXML(mp_event, "#text").(string)
+
+					switch eventCode {
+					case "0 BOOTSTRAP":
+						codes[0] = struct{}{}
+					case "1 BOOT":
+						codes[1] = struct{}{}
+					case "2 PERIODIC":
+						codes[2] = struct{}{}
+					case "3 SCHEDULED":
+						codes[3] = struct{}{}
+					case "4 VALUE CHANGE":
+						codes[4] = struct{}{}
+					case "6 CONNECTION REQUEST":
+						codes[6] = struct{}{}
+					case "7 TRANSFER COMPLETE":
+						codes[7] = struct{}{}
+					case "8 DIAGNOSTICS COMPLETE":
+						codes[8] = struct{}{}
+
+					}
 				}
 			}
 		}
+
 	}
 
 	return codes

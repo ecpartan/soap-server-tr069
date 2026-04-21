@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"sort"
 )
@@ -37,4 +38,10 @@ func MapToString(m map[string]any) string {
 	}
 	b.WriteString("}")
 	return b.String()
+}
+
+func StringToMap(s string) (map[string]any, error) {
+	var m map[string]any
+	err := json.Unmarshal([]byte(s), &m)
+	return m, err
 }

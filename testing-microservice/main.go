@@ -58,6 +58,7 @@ func check_code_task(task map[string]any, code string) error {
 			return err
 		}
 		if resp_port != int(req_code) {
+			logger.LogDebug("tsk", task, resp_port, req_code)
 			return errors.New("Code mismatch")
 		}
 	}
@@ -93,15 +94,18 @@ func SubstrByToken(str string, token byte, replace_map map[string]string) string
 func check_message(task map[string]any, message map[string]any) error {
 	logger.LogDebug("Enter ")
 
-	if find_instance_key, ok := task["Instance"].(string); ok {
+	if find_instance_key, ok := task["Instance"]; ok {
 		inst := parsemap.GetXMLString(message, "InstanceNumber")
 		logger.LogDebug("InstanceNumber22 ", reflect.TypeOf(inst), inst)
+		logger.LogDebug("InstanceNumber22 ", reflect.TypeOf(find_instance_key), inst)
+		if key, ok := find_instance_key.(string); ok {
 
-		if inst != "" {
-			test_ctx.map_inst[find_instance_key] = inst
-			return nil
-		} else {
-			return errors.New("Not found instance")
+			if inst != "" && find_instance_key != "" {
+				test_ctx.map_inst[key] = inst
+				return nil
+			} else {
+				return errors.New("Not found instance")
+			}
 		}
 	}
 
@@ -150,6 +154,45 @@ func check_message(task map[string]any, message map[string]any) error {
 			if !find {
 				return fmt.Errorf("Not found name %s with value %s in return ParameterValueStruct", path, value_mess)
 			}
+		}
+	}
+
+	if find_inst_values, ok := task["GetSpeed"].(map[string]any); ok {
+		mode := parsemap.GetXMLString(find_inst_values, "Mode")
+
+		if mode == "Download" {
+			paramlist := parsemap.GetXML(message, "ParameterList.ParameterValueStruct").([]any)
+			var eom, rom string
+			var total int64
+			for _, v := range paramlist {
+				name := parsemap.GetXMLString(v, "Name")
+				if name != "" && name == "InternetGatewayDevice.DownloadDiagnostics.ROMTime" {
+					rom = parsemap.GetXMLString(v, "Value")
+				}
+
+				if name != "" && name == "InternetGatewayDevice.DownloadDiagnostics.EOMTime" {
+					eom = parsemap.GetXMLString(v, "Value")
+				}
+
+				if name != "" && name == "InternetGatewayDevice.DownloadDiagnostics.TotalBytesReceived" {
+					total = parsemap.GetXML(v, "Value").(int64)
+				}
+			}
+			layout := "2006-01-02T15:04:05.999999"
+
+			t1, _ := time.Parse(layout, rom)
+			t2, _ := time.Parse(layout, eom)
+
+			diffSeconds := t2.Sub(t1).Seconds()
+
+			speed := (float64(total) * 8) / (1024 * 1024 * diffSeconds)
+
+			logger.LogDebug("InstanceNumber23 ", total, rom, eom, diffSeconds, speed)
+
+			if speed < 10 {
+				return fmt.Errorf("speed < 10 Mb/s, speed = %f", speed)
+			}
+
 		}
 	}
 
@@ -263,7 +306,7 @@ func main() {
 
 		data, err := io.ReadAll(content)
 		if err != nil {
-			log.Printf("Ошибка при чтении файла %s: %v\n", filePath, err)
+			log.Printf("Error read file %s: %v\n", filePath, err)
 			continue
 		}
 

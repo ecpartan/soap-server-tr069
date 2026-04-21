@@ -148,7 +148,7 @@ func (rw *responseWriter) WriteHeader(statusCode int) {
 
 // Helper method to log as JSON
 func (h *HTTPLogger) logJSON(prefix string, data interface{}) {
-	logData := map[string]interface{}{
+	logData := map[string]any{
 		"type": prefix,
 		"data": data,
 	}
@@ -163,8 +163,8 @@ func (h *HTTPLogger) logJSON(prefix string, data interface{}) {
 }
 
 // Simple method for one-line JSON logs
-func (h *HTTPLogger) logCompact(prefix string, data interface{}) {
-	logData := map[string]interface{}{
+func (h *HTTPLogger) logCompact(prefix string, data any) {
+	logData := map[string]any{
 		"type": prefix,
 		"data": data,
 	}
