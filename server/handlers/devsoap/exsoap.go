@@ -192,6 +192,9 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any, mp *
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:TransferComplete").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.TransferCompleteResponse
+		} else if ret, ok := p.GetXML(xml_body, "cwmp:RebootResponse").(map[string]any); ok {
+			mp.Body = ret
+			status = soap.RebootResponse
 		} else {
 			logger.LogDebug("not found")
 			return soap.ResponseUndefinded
@@ -240,9 +243,9 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	mp, ok := h.mapResponse.Get(addr)
 	if !ok {
 		logger.LogDebug("NewMap", mp)
-
 		mp = h.mapResponse.NewSet(addr)
 	}
+	logger.LogDebug("SetNewW1", mp.WaitEvent)
 
 	map_rt := h.mapResponse.GetRuntime(mp.Serial)
 
@@ -263,6 +266,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	}
 
 	paramType := h.parseXML(r, addr, mv, mp)
+	logger.LogDebug("SetNewW15", mp.WaitEvent)
 
 	if paramType == soap.ResponseUnauthorized {
 		return apperror.ErrUnAuthorized, t
@@ -316,7 +320,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	if paramType != soap.Inform {
 		tasks.GetTasks(w, addr, mp.ResponseTask, mp.SoapSessionInfo, h.mapResponse.Wg, h.execTasks.ExecTasks)
 	}
-	logger.LogDebug("SetNewW", mp.WaitEvent)
+	logger.LogDebug("SetNewW2", mp.WaitEvent)
 	h.mapResponse.Set(addr, *mp)
 
 	return nil, t

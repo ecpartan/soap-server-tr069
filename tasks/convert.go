@@ -9,6 +9,25 @@ import (
 	"github.com/ecpartan/soap-server-tr069/utils/semaphore"
 )
 
+func ParseResponseDef(mp *devmap.DevID, rpc string) {
+	logger.LogDebug(rpc)
+	logger.LogDebug("body, ", mp.Body)
+
+	if mp.RespChan == nil {
+		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: rpc}
+		return
+	}
+	go func() {
+		logger.LogDebug(rpc, mp.WaitEvent)
+
+		if mp.WaitEvent > -1 {
+			semaphore.Acquire(mp.Serial)
+		} else {
+			mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: rpc}
+		}
+	}()
+}
+
 func ParseFaultResponse(mp *devmap.DevID) {
 	logger.LogDebug("ParseFaultResponse")
 	logger.LogDebug("body,", mp.Body)
@@ -64,7 +83,6 @@ func ParseSetResponse(mp *devmap.DevID) {
 	}
 
 	if status := p.GetXMLString(mp.Body, "Status"); status == "1" || status == "0" {
-
 		go func() {
 			logger.LogDebug("PSR", mp.WaitEvent)
 
@@ -107,6 +125,7 @@ func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 		return
 	}
 	repository.UpdateCacheBySerial(mp.Serial, paramlist, l, repository.VALUES)
+
 	go func() {
 		logger.LogDebug("PGR", mp.WaitEvent)
 
@@ -119,15 +138,7 @@ func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 }
 
 func ParseGetRPCMethodsResponse(mp *devmap.DevID) {
-	logger.LogDebug("ParseGetRPCMethodsResponse")
-	logger.LogDebug("body,", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "GetRPCMethods"}
-		return
-	}
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetRPCMethods"}
+	ParseResponseDef(mp, "GetRPCMethods")
 }
 
 func ParseGetParameterNamesResponse(mp *devmap.DevID, l *repository.Cache) {
@@ -153,86 +164,38 @@ func ParseGetParameterAttributesResponse(mp *devmap.DevID, l *repository.Cache) 
 		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "GetParameterAttributes"}
 		return
 	}
-
 	paramlist := p.GetXML(mp.Body, "ParameterList.ParameterAttributeStruct").([]any)
-
 	repository.UpdateCacheBySerial(mp.Serial, paramlist, l, repository.ATTRS)
 
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetParameterAttributes"}
+	go func() {
+		logger.LogDebug("GetParameterAttributes", mp.WaitEvent)
+		if mp.WaitEvent > -1 {
+			semaphore.Acquire(mp.Serial)
+		} else {
+			mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "GetParameterAttributes"}
+		}
+	}()
+
 }
 
 func ParseSetParameterAttributesResponse(mp *devmap.DevID, l *repository.Cache) {
-	logger.LogDebug("ParseSetParameterAttributesResponse")
-	logger.LogDebug("body,", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "SetParameterAttributes"}
-		return
-	}
-
-	//paramlist := p.GetXML(mp.Body, "ParameterList.ParameterAttributeStruct").([]any)
-
-	//UpdateCacheBySerial(mp.Serial, paramlist, l, ATTRS)
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "SetParameterAttributes"}
+	ParseResponseDef(mp, "SetParameterAttributes")
 }
 
 func ParseDownloadResponse(mp *devmap.DevID) {
-	logger.LogDebug("ParseDownloadResponse")
-	logger.LogDebug("body, ", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Download"}
-		return
-	}
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Download"}
+	ParseResponseDef(mp, "Download")
 }
 
 func ParseUploadResponse(mp *devmap.DevID) {
-	logger.LogDebug("ParseUploadResponse")
-	logger.LogDebug("body, ", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Upload"}
-		return
-	}
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Upload"}
+	ParseResponseDef(mp, "Upload")
 }
-
 func ParseRebootResponse(mp *devmap.DevID) {
-	logger.LogDebug("ParseRebootResponse")
-	logger.LogDebug("body, ", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Reboot"}
-		return
-	}
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "Reboot"}
+	ParseResponseDef(mp, "Reboot")
 }
-
 func ParseFactoryResetResponse(mp *devmap.DevID) {
-	logger.LogDebug("ParseFactoryResetResponse")
-	logger.LogDebug("body, ", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "FactoryReset"}
-		return
-	}
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "FactoryReset"}
+	ParseResponseDef(mp, "FactoryReset")
 }
 
 func ParseTransferCompleteResponse(mp *devmap.DevID) {
-	logger.LogDebug("ParseTransferCompleteResponse")
-	logger.LogDebug("body, ", mp.Body)
-
-	if mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "TransferComplete"}
-		return
-	}
-
-	mp.RespChan <- devmodel.SoapResponse{Code: "0", Method: "TransferComplete"}
+	ParseResponseDef(mp, "TransferCompleteResponse")
 }

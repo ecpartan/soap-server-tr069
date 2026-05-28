@@ -62,6 +62,7 @@ func NewTask(t TaskView, opid utils.ID, devid utils.ID) *Task {
 		Status:    "pending",
 		TaskOpId:  opid,
 		DeviceId:  devid,
+		WaitEvent: -1,
 	}
 }
 

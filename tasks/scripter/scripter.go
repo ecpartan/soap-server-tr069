@@ -2,6 +2,7 @@ package scripter
 
 import (
 	"errors"
+	"reflect"
 	"sort"
 
 	logger "github.com/ecpartan/soap-server-tr069/log"
@@ -15,7 +16,7 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 
 	e := tasker.GetTasker().ExecTasks.Lst.TaskList
 
-	logger.LogDebug("AddToScripter", "scripterTasks", e)
+	logger.LogDebug("AddToScripter", e, scriptList)
 
 	keys := make([]string, 0, len(scriptList))
 	for k := range scriptList {
@@ -24,9 +25,9 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 	sort.Strings(keys)
 
 	if tsk == nil {
-		var oncebool bool
-		var eventint int
-		var waitevent int
+		oncebool := false
+		eventint := 0
+		waitevent := -1
 
 		if once, ok := scriptList["Once"]; ok {
 			if oncebool, ok = once.(bool); !ok {
@@ -42,11 +43,20 @@ func AddToScripter(sn string, scriptList map[string]any, tsk *entity.TaskViewDB)
 			}
 		}
 
+		if wait, ok := scriptList["WaitEvent"]; ok {
+			if waiteventf, ok := wait.(float64); !ok {
+				waitevent = -1
+			} else {
+				waitevent = int(waiteventf)
+			}
+		}
+
 		tsk = entity.NewTaskViewDB(utils.NewID(), "Pending", eventint, oncebool, string(utils.MapToString(scriptList)), waitevent)
 	}
 
 	for _, k := range keys {
 		if curr_task, ok := scriptList[k]; ok {
+			logger.LogDebug("AddToScripter", reflect.TypeOf(curr_task))
 			if addtask, ok := curr_task.(map[string]any); ok {
 				find_task := task.ParseTask(sn, addtask, tsk)
 				logger.LogDebug("Add task", find_task)

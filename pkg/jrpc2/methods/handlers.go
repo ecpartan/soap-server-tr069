@@ -101,6 +101,7 @@ func AddScriptTask(ctx context.Context, dto mwdto.Mwdto) ([]byte, error) {
 	}
 
 	if c == nil {
+		logger.LogDebug("cache is nil")
 		return nil, ErrNotfoundTree
 	}
 

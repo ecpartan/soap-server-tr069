@@ -199,7 +199,7 @@ func check_message(task map[string]any, message map[string]any) error {
 	return nil
 }
 
-func AnalizeResponse(arr []RetScriptTask, path string) error {
+func AnalizeResponse(arr []RetScriptTask, path string, num string) error {
 	dir := "./analize"
 
 	filePath := filepath.Join(dir, path)
@@ -221,22 +221,23 @@ func AnalizeResponse(arr []RetScriptTask, path string) error {
 	}
 
 	for i, rettask := range arr {
-		task, err := get_resp_tsk(i, mp)
-		if err != nil {
-			return err
+		if script, ok := mp[num]; ok {
+			if script_mp, ok := script.(map[string]any); ok {
+				task, err := get_resp_tsk(i, script_mp)
+				if err != nil {
+					return err
+				}
+				logger.LogDebug("Task: ", task)
+
+				if err := check_code_task(task, rettask.Code); err != nil {
+					return err
+				}
+
+				if err := check_message(task, rettask.Message); err != nil {
+					return err
+				}
+			}
 		}
-		logger.LogDebug("Task: ", task)
-
-		if err := check_code_task(task, rettask.Code); err != nil {
-			return err
-		}
-
-		err = check_message(task, rettask.Message)
-
-		if err != nil {
-			return err
-		}
-
 	}
 
 	return nil
@@ -288,7 +289,7 @@ func main() {
 	})
 
 	cfg := config.GetConfig()
-	url := fmt.Sprintf("http://%s:%d/integral", cfg.Server.Host, cfg.Server.Port) //"192.168.0.129", 8080)
+	url := fmt.Sprintf("http://%s:%d/integral", cfg.Server.Host, cfg.Server.Port)
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -312,49 +313,75 @@ func main() {
 
 		mp := make(map[string]any)
 		if json.Unmarshal(data, &mp) != nil {
+			log.Printf("JSON err: %v", string(data))
+
 			log.Fatalf("JSON err: %v", err)
 		}
 
-		jsonData, err := json.Marshal(mp)
-		if err != nil {
-			log.Fatalf("JSON err: %v", err)
+		keys := make([]string, 0, len(mp))
+		for k := range mp {
+			keys = append(keys, k)
 		}
 
-		req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonData))
-		if err != nil {
-			log.Fatal(err)
-		}
+		sort.Strings(keys)
 
-		client := &http.Client{
-			Timeout: 30 * time.Second,
-		}
+		for _, k := range keys {
 
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Fatal(err)
-		}
+			if script, ok := mp[k]; ok {
+				if script_mp, ok := script.(map[string]any); ok {
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		resp.Body.Close()
+					jsonData, err := json.Marshal(script_mp)
+					if err != nil {
+						log.Printf("JSON err: %v", script_mp)
+						log.Fatalf("JSON err: %v ", err)
+					}
 
-		var response []RetScriptTask
-		if json.Unmarshal(body, &response) != nil {
-			log.Fatalf("JSON err: %v", err)
-		}
+					req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonData))
+					if err != nil {
+						log.Fatal(err)
+					}
 
-		err = AnalizeResponse(response, file.Name())
-		file_key := strings.Split(file.Name(), ".")[0]
-		if err != nil {
-			report[file_key] = "FAILED!!! " + err.Error()
-		} else {
-			report[file_key] = "SUCCESS"
-		}
+					client := &http.Client{
+						Timeout: 300 * time.Second,
+					}
 
-		fmt.Println(err)
+					resp, err := client.Do(req)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					body, err := io.ReadAll(resp.Body)
+					if err != nil {
+						log.Fatal(err)
+					}
+					resp.Body.Close()
+
+					var response []RetScriptTask
+					if json.Unmarshal(body, &response) != nil {
+						log.Printf("JSON err: %v", string(body))
+						log.Fatalf("JSON err: %v", err)
+					}
+
+					err = AnalizeResponse(response, file.Name(), k)
+
+					file_key := strings.Split(file.Name(), ".")[0]
+					if err != nil {
+						report[file_key] = "FAILED!!! " + err.Error()
+					} else {
+						report[file_key] = "SUCCESS"
+					}
+
+					fmt.Println(err)
+				} else {
+					log.Printf("Not found key %s in file %s\n", k, filePath)
+				}
+			} else {
+				log.Printf("Not found keys in file %s\n", filePath)
+			}
+		}
 	}
 
-	SendReport(report)
+	fmt.Println(report)
+
+	//SendReport(report)
 }

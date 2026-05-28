@@ -205,7 +205,7 @@ func (h *handlerJrpc2) ExecTestTasks(w http.ResponseWriter, r *http.Request) err
 
 		task := func() (any, error) {
 			var ret []byte
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 			defer cancel()
 			err := jrcp2server.Instance.Server.Client.CallResult(ctx, "AddScript", mwdto.Mwdto{Reqw: script, ExecTasks: h.execTasks.ExecTasks}, &ret)
 			return ret, err

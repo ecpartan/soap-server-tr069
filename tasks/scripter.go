@@ -33,11 +33,7 @@ func NextTask(mp *devmodel.ResponseTask, addr string, evcodes map[int]struct{}, 
 			continue
 		}
 		ret := task
-		if task.WaitEvent != -1 {
-			mp.WaitEvent = task.WaitEvent
-			logger.LogDebug("NextTask", mp.WaitEvent)
 
-		}
 		e.DeleteTaskByID(mp.Serial, task.ID)
 
 		return ret
@@ -126,6 +122,7 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 
 func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp *soap.SoapSessionInfo, wg *sync.WaitGroup, e *taskexec.TaskExec) bool {
 	logger.LogDebug("GetTasks")
+
 	t := NextTask(mp, host, sp.EventCodes, e)
 
 	if t.Action == task.NoTask {
@@ -138,6 +135,7 @@ func GetTasks(w http.ResponseWriter, host string, mp *devmodel.ResponseTask, sp 
 		logger.LogDebug("GetParameterValues", t.Params.(taskmodel.GetParamValTask))
 		repository.ClearCacheNodes(mp.Serial, t.Params.(taskmodel.GetParamValTask).Name)
 	}
+
 	ExecuteTask(t, wg, mp, sp, w)
 
 	return false
@@ -185,9 +183,12 @@ func executeResponsetask(task_func func(w http.ResponseWriter, req any, sp *soap
 		}
 	}(t)
 
+	if t.WaitEvent != -1 {
+		rp.WaitEvent = t.WaitEvent
+		logger.LogDebug("executeResponsetaskEvent", rp.WaitEvent)
+	}
 	logger.LogDebug("executeResponsetask2", rp.RespList)
 	logger.LogDebug("Wait", t)
-
 	wg.Wait()
 }
 
