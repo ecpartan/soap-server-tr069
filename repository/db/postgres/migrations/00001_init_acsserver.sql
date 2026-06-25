@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS task (
     type VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL,
     event_code INTEGER NOT NULL,
+    waitevent INTEGER
     once BOOLEAN NOT NULL,
     created_at    TIMESTAMPTZ NOT NULL,
     updated_at    TIMESTAMPTZ,
@@ -167,14 +168,14 @@ VALUES (gen_random_uuid(), 'Script2', '{"Script":{"1":{"GetParameterAttributes":
 INSERT INTO task_op (id, name, body)
 VALUES (gen_random_uuid(), 'Script3', '{"Script":{"1":{"GetParameterNames":{"Name":"InternetGatewayDevice.WANDevice.","NextLevel":0}},"Serial":"94DE80BF38B2"}}');
 
-INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
-VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script1' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
+INSERT INTO task (id, type, status, event_code, once, waitevent, created_at, updated_at, result, task_op_id, device_id)
+VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, -1, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script1' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
 
-INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
-VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script2' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
+INSERT INTO task (id, type, status, event_code, once, waitevent, created_at, updated_at, result, task_op_id, device_id)
+VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, -1, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script2' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
 
-INSERT INTO task (id, type, status, event_code, once, created_at, updated_at, result, task_op_id, device_id)
-VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script3' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
+INSERT INTO task (id, type, status, event_code, once, waitevent, created_at, updated_at, result, task_op_id, device_id)
+VALUES (gen_random_uuid(), 'Script', 'pending', 1, false, -1, NOW(), NOW(), 'no', (SELECT id FROM task_op WHERE name = 'Script3' LIMIT 1), (SELECT id FROM device WHERE sn = '94DE80BF38B2'));
 
 
 

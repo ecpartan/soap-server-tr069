@@ -3,8 +3,8 @@ package tasks
 import (
 	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	"github.com/ecpartan/soap-server-tr069/internal/devmodel"
-	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	p "github.com/ecpartan/soap-server-tr069/pkg/parsemap"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 	"github.com/ecpartan/soap-server-tr069/utils/semaphore"
 )

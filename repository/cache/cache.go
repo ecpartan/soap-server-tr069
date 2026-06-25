@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/ecpartan/soap-server-tr069/internal/config"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/config"
 	"github.com/go-redis/redis/v8"
 	"github.com/m7shapan/lfu-redis"
 )

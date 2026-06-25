@@ -69,6 +69,7 @@ func (d *DevMap) NewSet(key string) *DevID {
 	d.devs_session[key] = DevID{
 		SoapSessionInfo: soap.NewSoapSessionInfo(),
 		ResponseTask:    devmodel.NewResponseTask(),
+		
 	}
 
 	if ret, ok := d.devs_session[key]; ok {

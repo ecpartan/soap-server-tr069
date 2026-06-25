@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"strings"
 
-	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	p "github.com/ecpartan/soap-server-tr069/pkg/parsemap"
 )
 
 type NodeStore struct {

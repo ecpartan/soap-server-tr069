@@ -5,8 +5,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/parsemap"
 	"github.com/ecpartan/soap-server-tr069/repository/storage"
 	"github.com/ecpartan/soap-server-tr069/tasks/task"
 	"github.com/ecpartan/soap-server-tr069/tasks/taskexec"

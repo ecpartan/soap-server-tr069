@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"strconv"
 
-	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	"github.com/ecpartan/soap-server-tr069/internal/taskmodel"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	p "github.com/ecpartan/soap-server-tr069/pkg/parsemap"
 )
 
 func PrepareHeaderInfo(envelope any) EnvInfo {

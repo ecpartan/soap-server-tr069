@@ -20,8 +20,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/ecpartan/soap-server-tr069/internal/config"
-	"github.com/ecpartan/soap-server-tr069/internal/parsemap"
+	"github.com/ecpartan/soap-server-tr069/pkg/config"
+	"github.com/ecpartan/soap-server-tr069/pkg/parsemap"
 )
 
 type RetScriptTask struct {

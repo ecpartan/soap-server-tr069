@@ -1,6 +1,6 @@
 services:
   postgresdb:
-    image: postgres:latest
+    image: postgres:17
     environment:
       POSTGRES_USER: postgres
       DATABASE_HOST: postgresdb
@@ -77,6 +77,15 @@ services:
           condition: service_started
       pushgateway:
           condition: service_started
+  testing-service:
+    build:
+      context: ./testing-microservice
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      server:
+          condition: service_healthy
 volumes:
   pg_data:
 networks:

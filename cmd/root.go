@@ -11,10 +11,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ecpartan/soap-server-tr069/internal/config"
-	p "github.com/ecpartan/soap-server-tr069/internal/parsemap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/config"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/middleware"
+	p "github.com/ecpartan/soap-server-tr069/pkg/parsemap"
 	repository "github.com/ecpartan/soap-server-tr069/repository/cache"
 
 	"github.com/ecpartan/soap-server-tr069/server"

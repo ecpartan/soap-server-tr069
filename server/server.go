@@ -26,9 +26,9 @@ import (
 	swag "github.com/swaggo/http-swagger"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ecpartan/soap-server-tr069/internal/config"
 	"github.com/ecpartan/soap-server-tr069/internal/devmap"
 	logger "github.com/ecpartan/soap-server-tr069/log"
+	"github.com/ecpartan/soap-server-tr069/pkg/config"
 )
 
 // Server a SOAP server, which can be run standalone or used as a http.HandlerFunc

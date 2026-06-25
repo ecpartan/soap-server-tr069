@@ -16,6 +16,8 @@ type Writer interface {
 	Create(e *entity.Profile) (utils.ID, error)
 	Update(e *entity.Profile) error
 	Delete(id utils.ID) error
+	CreateFW(e *entity.Firmware) (utils.ID, error)
+	CreateConf(e *entity.Config) (utils.ID, error)
 }
 
 type Repository interface {
