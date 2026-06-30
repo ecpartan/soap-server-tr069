@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS task (
     type VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL,
     event_code INTEGER NOT NULL,
-    waitevent INTEGER
+    waitevent INTEGER,
     once BOOLEAN NOT NULL,
     created_at    TIMESTAMPTZ NOT NULL,
     updated_at    TIMESTAMPTZ,
