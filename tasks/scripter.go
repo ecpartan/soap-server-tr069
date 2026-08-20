@@ -79,7 +79,11 @@ func PrepareListTask(t task.Task, rp *devmodel.ResponseTask) task.Task {
 
 	lst_num := []string{}
 	for _, v := range rp.RespList {
-		lst_num = append(lst_num, v.Num)
+		if v.Num != "0" {
+			if _, err := strconv.Atoi(v.Num); err == nil {
+				lst_num = append(lst_num, v.Num)
+			}
+		}
 	}
 
 	if t.WaitEvent != -1 {

@@ -85,6 +85,24 @@
   }
 }
 
+{
+  "Script": {
+    "1": {
+      "Download":  
+        {
+          "file": "firmware",
+          "url": "http://192.168.0.129:8087/files/DWR_956RTL_4.0.2.bin
+"
+      }
+    }
+  ,
+  "Serial": "009012BD0001",
+  "Event": 6,
+  "Once": true
+  }
+}
+
+
 
 {
   "Script": {

@@ -8,7 +8,7 @@ services:
       POSTGRES_DB: acsserver
       #PGDATA: /var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5431:5432"
     networks:
       - backend
     restart:
@@ -24,7 +24,7 @@ services:
   redis:
     image: redis:8.0 
     ports:
-      - "6379:6379"
+      - "6378:6379"
     networks:
       - backend
   grafana:
@@ -79,7 +79,8 @@ services:
           condition: service_started
   testing-service:
     build:
-      context: https://github.com/ecpartan/testing-microservice-soap.git#main
+      #context: https://github.com/ecpartan/testing-microservice-soap.git#main
+      context: ./testing-microservice-soap
       dockerfile: Dockerfile
     environment:
       SERVER_URL: http://server:8080/integral

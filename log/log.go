@@ -8,55 +8,47 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/logutils"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// logFilter represent a custom logger seting
-var logFilter = &logutils.LevelFilter{
-	Levels:   []logutils.LogLevel{"DEBUG", "INFO", "ERROR", "CRITICAL"},
-	MinLevel: logutils.LogLevel("DEBUG"),
-	Writer:   os.Stdout,
+type CustomLogger struct {
+	logger *log.Logger
+	filter *logutils.LevelFilter
 }
 
-// InitLogger init custom logger
+var log_inst = &CustomLogger{}
+
 func InitLogger(wrt io.Writer) {
-	logFilter.Writer = wrt
-	log.SetOutput(logFilter)
+
+	log_inst, _ = NewCustomLogger("DEBUG", "app.log")
 }
-
-func GetLogger() *log.Logger {
-	return log.Default()
-}
-
-// SetFilter set log level
-func SetLevel(lev string) {
-	logFilter.SetMinLevel(logutils.LogLevel(lev))
-}
-
-// caller return caller function name
-func LogDebug(mes string, args ...any) {
-	printfMsg("[DEBUG]", 0, mes, args...)
-}
-
-func LogErr(mes string, args ...any) {
-	printfMsg("[ERROR]", 0, mes, args...)
-}
-
-func printfMsg(level string, depth int, mes string, args ...interface{}) {
-	// Chek for appropriate level of logging
-	if logFilter.Check([]byte(level)) {
-		argsStr := getArgsString(args...) // get formated string with arguments
-
-		if argsStr == "" {
-			log.Printf("%s - %s - %s", level, caller(depth+3), mes)
-		} else {
-			log.Printf("%s - %s - %s [%s]", level, caller(depth+3), mes, argsStr)
-		}
+func NewCustomLogger(minLevel logutils.LogLevel, logFile string) (*CustomLogger, error) {
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR"},
+		MinLevel: minLevel,
 	}
+
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   "app.log",
+		MaxSize:    10,
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true,
+	}
+
+	filter.Writer = io.MultiWriter(os.Stdout, lumberjackLogger)
+
+	logger := log.New(filter, "", 0)
+
+	return &CustomLogger{
+		logger: logger,
+		filter: filter,
+	}, nil
 }
 
-// getArgsString return formated string with arguments
 func getArgsString(args ...any) (argsStr string) {
 	for _, arg := range args {
 		if arg != nil {
@@ -67,7 +59,6 @@ func getArgsString(args ...any) (argsStr string) {
 	return
 }
 
-// caller returns a Valuer that returns a file and line from a specified depth in the callstack.
 func caller(depth int) string {
 	pc := make([]uintptr, 15)
 	n := runtime.Callers(depth+1, pc)
@@ -77,4 +68,49 @@ func caller(depth int) string {
 	idxName := strings.IndexByte(frame.Function[idx+1:], '.') + idx + 1
 
 	return frame.File[idxFile+1:] + ":[" + strconv.Itoa(frame.Line) + "] - " + frame.Function[idxName+1:] + "()"
+}
+
+func LogDebug(mes string, args ...any) {
+	argsStr := getArgsString(args...) // get formated string with arguments
+
+	if argsStr == "" {
+		log_inst.logger.Printf("[DEBUG] %s - %s - %s - %s", time.Now().Format(time.RFC1123), mes, caller(3), mes)
+	} else {
+		log_inst.logger.Printf("[DEBUG] %s - %s - %s - %s [%s]", time.Now().Format(time.RFC1123), mes, caller(3), mes, argsStr)
+	}
+}
+
+func LogErr(mes string, args ...any) {
+	log_inst.Debugf("[DEBUG]", args...)
+}
+func (cl *CustomLogger) Debug(msg string, args ...any) {
+	cl.logger.Printf("[DEBUG] %s", msg)
+}
+
+func (cl *CustomLogger) Info(msg string) {
+	cl.logger.Printf("[INFO] %s", msg)
+}
+
+func (cl *CustomLogger) Warn(msg string) {
+	cl.logger.Printf("[WARN] %s", msg)
+}
+
+func (cl *CustomLogger) Error(msg string) {
+	cl.logger.Printf("[ERROR] %s", msg)
+}
+
+func (cl *CustomLogger) Debugf(format string, args ...interface{}) {
+	cl.logger.Printf("[DEBUG] "+format, args...)
+}
+
+func (cl *CustomLogger) Infof(format string, args ...interface{}) {
+	cl.logger.Printf("[INFO] "+format, args...)
+}
+
+func (cl *CustomLogger) Warnf(format string, args ...interface{}) {
+	cl.logger.Printf("[WARN] "+format, args...)
+}
+
+func (cl *CustomLogger) Errorf(format string, args ...interface{}) {
+	cl.logger.Printf("[ERROR] "+format, args...)
 }

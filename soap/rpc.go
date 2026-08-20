@@ -221,7 +221,7 @@ func NewDownload(download taskmodel.DownloadTask, env EnvInfo) *Download {
 	if download.FileType == "config" {
 		resp.Body.Download.FileType = "3 Vendor Configuration File"
 	} else {
-		resp.Body.Download.FileType = "3 Vendor Log File"
+		resp.Body.Download.FileType = "1 Firmware Upgrade Image"
 	}
 	resp.EnvInfo = env
 
