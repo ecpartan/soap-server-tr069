@@ -148,3 +148,18 @@ func (s *Service) GetAuthDeviceBySn(sn string) (*entity.DeviceAuthView, error) {
 	return entity.NewDeviceAuthView(dev.Username, dev.Password, dev.CrUsername, dev.CrPassword), nil
 
 }
+
+func (s *Service) SetAuthDeviceBySn(sn, crusername, crpassword, username, password string) error {
+	dev, err := s.GetOneBySn(sn)
+
+	if err != nil {
+		return err
+	}
+
+	dev.Username = username
+	dev.Password = password
+	dev.CrUsername = crusername
+	dev.CrPassword = crpassword
+
+	return s.repo.Update(dev)
+}

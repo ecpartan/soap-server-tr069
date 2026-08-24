@@ -27,6 +27,7 @@ services:
       - "6378:6379"
     networks:
       - backend
+    restart: always
   grafana:
     image: grafana/grafana
     ports:
@@ -36,6 +37,7 @@ services:
       - pushgateway
     networks:
       - backend
+    restart: always
   prometheus:
     image: prom/prometheus
     ports:
@@ -46,6 +48,7 @@ services:
       - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - backend
+    restart: always
   pushgateway:
     image: prom/pushgateway
     expose:
@@ -54,6 +57,7 @@ services:
       - "9091:9091"
     networks:
       - backend
+    restart: always
   server:
     build: .
     ports:
@@ -77,6 +81,10 @@ services:
           condition: service_started
       pushgateway:
           condition: service_started
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
   testing-service:
     build:
       #context: https://github.com/ecpartan/testing-microservice-soap.git#main
@@ -91,6 +99,10 @@ services:
     depends_on:
       server:
           condition: service_started
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 volumes:
   pg_data:
 networks:

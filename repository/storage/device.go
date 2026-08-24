@@ -124,6 +124,37 @@ func (s *DevStorage) Delete(id utils.ID) error {
 
 func (s *DevStorage) Update(e *entity.Device) error {
 
-	err := s.db.Get(nil, "UPDATE device SET sn = ?, mac = ?, username = ?, password = ? WHERE id = ?", e.SerialNumber, e.Mac, e.Username, e.Password, e.ID)
-	return err
+	/*	ret, err := s.db.Exec("UPDATE device SET sn = ?, mac = ?, username = ?, password = ? WHERE id = ?", e.SerialNumber, e.Mac, e.Username, e.Password, e.ID)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, _ := ret.RowsAffected()
+		if rowsAffected == 0 {
+			return fmt.Errorf("no device found with the given ID")
+		}
+	*/
+
+	query := `UPDATE device SET 
+    sn = :sn, 
+    mac = :mac, 
+    username = :username, 
+    password = :password,
+	cr_username = :cr_username,
+	cr_password = :cr_password
+WHERE id = :id`
+
+	_, err := s.db.NamedExec(query, map[string]any{
+		"sn":          e.SerialNumber,
+		"mac":         e.Mac,
+		"username":    e.Username,
+		"password":    e.Password,
+		"cr_username": e.CrUsername,
+		"cr_password": e.CrPassword,
+		"id":          e.ID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

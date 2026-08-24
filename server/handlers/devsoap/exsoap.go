@@ -132,9 +132,14 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any, mp *
 			logger.LogDebug("found Inform")
 			if sn := p.GetXMLString(ret, "DeviceId.SerialNumber"); sn != "" {
 				if authview, err := h.service.GetAuthDeviceBySn(sn); err == nil {
-					logger.LogDebug("authview", authview)
-					mp_rt := h.mapResponse.GetRuntime(addr)
 
+					logger.LogDebug("authview", authview)
+					mp_rt := h.mapResponse.GetRuntime(sn)
+					mp_rt.AuthUsername = authview.Username
+					mp_rt.AuthPassword = authview.Password
+					mp_rt.ConnectionRequestUsername = authview.CrUsername
+					mp_rt.ConnectionRequestPassword = authview.CrPassword
+					h.mapResponse.SetRuntime(sn, mp_rt)
 					if !check_authorization(r, mp_rt.AuthUsername, mp_rt.AuthPassword) {
 						return soap.ResponseUnauthorized
 					}
@@ -289,7 +294,11 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 	case soap.GetParameterValuesResponse:
 		tasks.ParseGetResponse(mp, h.Cache)
 	case soap.SetParameterValuesResponse:
-		tasks.ParseSetResponse(mp)
+		{
+			tasks.ParseSetResponse(mp)
+			err := h.service.SetAuthDeviceBySn(mp.Serial, map_rt.ConnectionRequestUsername, map_rt.ConnectionRequestPassword, map_rt.AuthUsername, map_rt.AuthPassword)
+			logger.LogDebug("Err", err)
+		}
 	case soap.AddObjectResponse:
 		tasks.ParseAddResponse(mp)
 	case soap.DeleteObjectResponse:
