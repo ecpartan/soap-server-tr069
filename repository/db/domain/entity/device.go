@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"net"
 	"time"
 
 	"github.com/ecpartan/soap-server-tr069/utils"
@@ -106,8 +105,8 @@ func (d *Device) Validate() error {
 	if len(d.Manufacturer) < 1 || len(d.Manufacturer) > 20 {
 		return ErrInvalidEntity
 	}
-	if net.ParseIP(d.CrURL) == nil {
+	/*if net.ParseIP(d.CrURL) == nil {
 		return ErrCRULR
-	}
+	}*/
 	return nil
 }

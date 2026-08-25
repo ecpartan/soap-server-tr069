@@ -37,7 +37,9 @@ func (s *Service) GetOneBySn(sn string) (*entity.Device, error) {
 	if devs == nil {
 		return nil, entity.ErrNotFound
 	}
-
+	if len(devs) == 0 {
+		return nil, entity.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}

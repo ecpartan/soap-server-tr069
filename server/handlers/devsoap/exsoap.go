@@ -67,14 +67,14 @@ func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform 
 	dev, err := h.service.GetOneBySn(serial)
 
 	logger.LogDebug("GetDevicebySerial", dev, err)
-	if err != nil {
+	/*if err != nil {
 		return err
 	}
-
+	*/
 	var manufacturer, model, oui, sw, hw, datamodel, crurl string
 	devid := p.GetXML(inform, "DeviceId")
 	manufacturer = p.GetXMLString(devid, "Manufacturer")
-	oui = p.GetXMLString(inform, "OUI")
+	oui = p.GetXMLString(devid, "OUI")
 
 	tree := cache.Get(serial)
 	if p.GetXML(tree, soap.Pref98) != nil {
@@ -86,10 +86,16 @@ func (h *handler) updateDeviceDB(serial string, cache *repository.Cache, inform 
 	hw = p.GetXMLValue(tree, soap.HW_V)
 	sw = p.GetXMLValue(tree, soap.SW_V)
 	model = p.GetXMLValue(tree, soap.MODELNAME)
-
+	if model == "" {
+		model = "Router"
+	}
 	if dev == nil {
 		view := entity.NewDeviceView(serial, manufacturer, model, oui, sw, hw, datamodel, crurl)
+		logger.LogDebug("updateDeviceDB", view)
+
 		_, err := h.service.CreateDevice(*view)
+		logger.LogDebug("updateDeviceDB", err)
+
 		return err
 	} else {
 		dev.Datamodel = datamodel
@@ -117,12 +123,8 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any, mp *
 	} else {
 		logger.LogDebug("mapresponse", mp)
 		mp.Env = soap.PrepareHeaderInfo(envelope)
-
 		xml_body := p.GetXML(envelope, "SOAP-ENV:Body")
 
-		if xml_body == nil {
-			return soap.ResponseUndefinded
-		}
 		var status = soap.ResponseUndefinded
 
 		if ret, ok := p.GetXML(xml_body, "SOAP-ENV:Fault").(map[string]any); ok {
@@ -152,6 +154,7 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any, mp *
 				paramlist := p.GetXML(ret, "ParameterList.ParameterValueStruct").([]any)
 				logger.LogDebug("paramlist", paramlist)
 				repository.UpdateCacheBySerial(sn, paramlist, h.Cache, repository.VALUES)
+
 				h.updateDeviceDB(sn, h.Cache, ret)
 
 				mp.EventCodes = soap.ParseEventCode(ret)

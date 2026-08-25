@@ -48,6 +48,9 @@ func (s *DevStorage) Search(query string) ([]*entity.Device, error) {
 
 	err := s.db.Get(&t, s.db.Rebind("SELECT * FROM device WHERE sn=?"), query)
 
+	if err != nil {
+		return nil, err
+	}
 	logger.LogDebug("CreateOp", err, t)
 
 	ret = append(ret, &t)
@@ -106,10 +109,16 @@ func (s *DevStorage) List() ([]*entity.Device, error) {
 }
 
 func (s *DevStorage) Create(e *entity.Device) (utils.ID, error) {
-
-	err := s.db.Get(e, "INSERT INTO device (id, sn, mac, username, password, cr_username, cr_password, cr_url, status, uptime, sw_version, hw_version, model, manufacturer, oui, datamodel, profile_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		e.ID, e.SerialNumber, e.Mac, e.Username, e.Password, e.CrUsername, e.CrPassword, e.CrURL, e.Status, e.Uptime, e.SwVersion, e.HwVersion, e.Model, e.Manufacturer, e.OUI, e.Datamodel, e.ProfileId)
-
+	/*
+		err := s.db.Get(e, "INSERT INTO device (id, sn, mac, username, password, cr_username, cr_password, cr_url, status, uptime, sw_version, hw_version, model, manufacturer, oui, datamodel, profile_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			e.ID, e.SerialNumber, e.Mac, e.Username, e.Password, e.CrUsername, e.CrPassword, e.CrURL, e.Status, e.Uptime, e.SwVersion, e.HwVersion, e.Model, e.Manufacturer, e.OUI, e.Datamodel, e.ProfileId)
+	*/
+	err := s.db.Get(e, `INSERT INTO device (
+        id, sn, mac, username, password, cr_username, cr_password, cr_url, 
+        status, uptime, sw_version, hw_version, model, manufacturer, oui, datamodel, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+		e.ID, e.SerialNumber, e.Mac, e.Username, e.Password, e.CrUsername, e.CrPassword, e.CrURL,
+		e.Status, e.Uptime, e.SwVersion, e.HwVersion, e.Model, e.Manufacturer, e.OUI, e.Datamodel, e.Created_at, e.Updated_at)
 	if err != nil {
 		return utils.ID{}, err
 	}
