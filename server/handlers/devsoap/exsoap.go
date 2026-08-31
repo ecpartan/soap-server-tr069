@@ -59,6 +59,7 @@ func (h *handler) Register(router *httprouter.Router) {
 	router.Handler(http.MethodPost, "/", httplg(http.HandlerFunc(h.PerformSoap)))*/
 
 	router.Handler(http.MethodPost, "/", httplogger.NewHTTPLogger().Middleware(apperror.Middleware(h.PerformSoap)))
+
 	//router.Handler(http.MethodPost, "/", LoggingMiddleware(h.PerformSoap))
 
 }
@@ -200,6 +201,7 @@ func (h *handler) parseXML(r *http.Request, addr string, mv map[string]any, mp *
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:TransferComplete").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.TransferCompleteResponse
+			mp.EventCodes = soap.Add_transfer_complete_event_code()
 		} else if ret, ok := p.GetXML(xml_body, "cwmp:RebootResponse").(map[string]any); ok {
 			mp.Body = ret
 			status = soap.RebootResponse
@@ -324,6 +326,8 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 		tasks.ParseFactoryResetResponse(mp)
 	case soap.TransferCompleteResponse:
 		httpserver.TransTransferCompleteResponse(w, mp.ResponseTask.Body, mp.SoapSessionInfo, &map_rt)
+		tasks.CheckWaitEvent(mp)
+
 		//tasks.ParseTransferCompleteResponse(mp)
 	default:
 

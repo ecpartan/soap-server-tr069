@@ -309,3 +309,10 @@ func ParseEventCode(mp map[string]any) map[int]struct{} {
 
 	return codes
 }
+
+func Add_transfer_complete_event_code() map[int]struct{} {
+	codes := make(map[int]struct{})
+
+	codes[9] = struct{}{}
+	return codes
+}

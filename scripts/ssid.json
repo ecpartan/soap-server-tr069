@@ -57,7 +57,7 @@
       "Upload":  
         {
           "file": "config",
-          "url": "http://192.168.0.129:8087/files/dwr956"
+          "url": "http://192.168.0.129:8080/upload/"
       }
     }
   ,
@@ -75,7 +75,7 @@
       "Download":  
         {
           "file": "config",
-          "url": "http://192.168.0.129:8087/files/dwr956"
+          "url": "http://192.168.0.129:8080/upload/file"
       }
     }
   ,
@@ -107,7 +107,7 @@
 {
   "Script": {
     "1": {
-      "GetRPCMethods": {}  
+        "SetAuthorization": {}
     }
   ,
   "Serial": "009012BD0001",
@@ -115,3 +115,4 @@
   "Once": true
   }
 }
+

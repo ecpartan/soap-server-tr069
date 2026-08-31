@@ -139,3 +139,17 @@ func (m *MetricsService) MetricsResultReq(now time.Time, err string) {
 	m.Summary["request_processing_time_summary_ms"].Observe(time.Since(now).Seconds())
 	m.Gauge["active_devices"].Dec()
 }
+
+func (m *MetricsService) Register(router *httprouter.Router) {
+	router.HandlerFunc(http.MethodGet, "/heartbeat", m.Heartbeat)
+}
+
+// Heartbeat
+// @Summary Heartbeat metrics
+// @Tags metrics
+// @Success 204
+// @Router /heartbeat [get]
+func (m *MetricsService) Heartbeat(w http.ResponseWriter, r *http.Request) {
+	logger.LogDebug("Enter Heartbeat")
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -62,7 +62,9 @@ func (h *HTTPLogger) Middleware(next http.Handler) http.Handler {
 		if r.Body != nil {
 			reqBody, _ = io.ReadAll(r.Body)
 			r.Body.Close()
-			logger.LogDebug("Request: %s %s", r.Method, string(reqBody))
+			if r.Method != http.MethodPut {
+				logger.LogDebug("Request: %s %s", r.Method, string(reqBody))
+			}
 
 			r.Body = io.NopCloser(bytes.NewBuffer(reqBody))
 		}

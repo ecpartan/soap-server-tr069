@@ -9,7 +9,7 @@ import (
 	"time"
 
 	_ "github.com/ecpartan/soap-server-tr069/docs"
-	"github.com/ecpartan/soap-server-tr069/httpserver"
+	"github.com/ecpartan/soap-server-tr069/fileserver"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2"
 	"github.com/ecpartan/soap-server-tr069/pkg/jrpc2/middleware"
 	usecase_service "github.com/ecpartan/soap-server-tr069/repository/db/domain/usecase/service"
@@ -84,6 +84,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		logger.LogDebug("Monitoring service not initialized", err)
 		return nil, err
 	}
+	mservice.Register(router)
 
 	web.Register(cfg.Server.Host, cfg.Server.PortWeb)
 	dbstorage, err := storage.NewStorage(&cfg.DatabaseConf)
@@ -92,7 +93,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	err = httpserver.NewFileServer(router)
+	err = fileserver.NewFileServer(router)
 	if err != nil {
 		return nil, err
 	}

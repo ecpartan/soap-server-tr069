@@ -3,6 +3,8 @@ package monitoring
 import (
 	"net/http"
 
+	logger "github.com/ecpartan/soap-server-tr069/log"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -23,5 +25,6 @@ func (h *Handler) Register(router *httprouter.Router) {
 // @Success 204
 // @Router /heartbeat [get]
 func (h *Handler) Heartbeat(w http.ResponseWriter, r *http.Request) {
+	logger.LogDebug("Enter Heartbeat")
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -3,12 +3,15 @@ package apperror
 import (
 	"errors"
 	"net/http"
+
+	logger "github.com/ecpartan/soap-server-tr069/log"
 )
 
 type AppHandler func(http.ResponseWriter, *http.Request) error
 
 func Middleware(h AppHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.LogDebug("Enter middleware", r.URL.Path)
 
 		var appErr *AppError
 		err := h(w, r)
