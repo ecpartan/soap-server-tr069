@@ -118,14 +118,17 @@ func ParseGetResponse(mp *devmap.DevID, l *repository.Cache) {
 	logger.LogDebug("ParseGetResponse")
 	logger.LogDebug("body,", mp.Body)
 
-	paramlist := p.GetXML(mp.Body, "ParameterList.ParameterValueStruct").([]any)
-
-	if paramlist == nil || mp.RespChan == nil {
-		mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Get"}
-		return
+	if paramlist, ok := p.GetXML(mp.Body, "ParameterList.ParameterValueStruct").([]any); !ok {
+		paramlist = make([]any, 0)
+		if params, ok := p.GetXML(mp.Body, "ParameterList.ParameterValueStruct").(map[string]any); ok {
+			paramlist = append(paramlist, params)
+		}
+		if paramlist == nil || mp.RespChan == nil {
+			mp.RespChan <- devmodel.SoapResponse{Code: "-1", Method: "Get"}
+			return
+		}
+		repository.UpdateCacheBySerial(mp.Serial, paramlist, l, repository.VALUES)
 	}
-	repository.UpdateCacheBySerial(mp.Serial, paramlist, l, repository.VALUES)
-
 	go func() {
 		logger.LogDebug("PGR", mp.WaitEvent)
 
