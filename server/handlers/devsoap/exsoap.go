@@ -269,7 +269,7 @@ func (h *handler) performSoap(w http.ResponseWriter, r *http.Request) (error, ti
 
 			logger.LogDebug("mapresponse1", h.mapResponse)
 
-			//h.mapResponse.Delete(addr) //TODO LRU cache
+			h.mapResponse.Delete(addr) //TODO LRU cache
 		}
 
 		return nil, t

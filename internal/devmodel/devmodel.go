@@ -59,7 +59,7 @@ func (r *ResponseTask) ResplistIsEmpty() bool {
 func (r *ResponseTask) SetBatchSizeTasks(sz int) {
 	r.mu.Lock()
 	if sz > 0 {
-		r.BtchSize = sz
+		r.BtchSize += sz
 	}
 	r.mu.Unlock()
 }

@@ -74,9 +74,9 @@ func LogDebug(mes string, args ...any) {
 	argsStr := getArgsString(args...) // get formated string with arguments
 
 	if argsStr == "" {
-		log_inst.logger.Printf("[DEBUG] %s - %s - %s - %s", time.Now().Format(time.RFC1123), mes, caller(2), mes)
+		log_inst.logger.Printf("[DEBUG] %s - %s - %s", time.Now().Format(time.RFC1123), caller(2), mes)
 	} else {
-		log_inst.logger.Printf("[DEBUG] %s - %s - %s - %s [%s]", time.Now().Format(time.RFC1123), mes, caller(2), mes, argsStr)
+		log_inst.logger.Printf("[DEBUG] %s - %s - %s [%s]", time.Now().Format(time.RFC1123), caller(2), mes, argsStr)
 	}
 }
 
